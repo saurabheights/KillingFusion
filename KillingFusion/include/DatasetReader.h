@@ -9,6 +9,8 @@
 #include <vector>
 
 class DatasetReader {
+ private:
+
   std::string m_imageDir;
   std::string m_depthFilePattern;
   std::string m_colorFilePattern;
@@ -28,6 +30,10 @@ class DatasetReader {
                 std::string omaskFilePattern,
                 std::string intrinsicParamsFile,
                 int numImageFiles);
+
+  void loadImages();
+
+  int getNumImageFiles() const;
 };
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_DATASETREADER_H

@@ -14,7 +14,7 @@ void KillingFusion::process() {
   // Save prev2can (previous to canonical displacement field) to null
 
   // For each file in DatasetReader
-  for (int i = 0; i < m_datasetReader.m_numImageFiles; ++i) {
+  for (int i = 0; i < m_datasetReader.getNumImageFiles(); ++i) {
     // Convert to SDF - currSdf
 
     // Register currSDF to prevSDF using SDF-2-SDF framework and compure cur2prev displacement field

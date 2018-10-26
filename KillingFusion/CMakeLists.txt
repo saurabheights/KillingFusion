@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.3)
-project(KillingFusion C CXX)
+project(KillingFusion C CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -19,6 +19,10 @@ find_package(PkgConfig REQUIRED)
 ## Eigen3
 FIND_PACKAGE(Eigen3 REQUIRED)
 INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
+
+## OpenCV
+find_package(OpenCV 3.0 REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Ceres Solver
 find_package(Ceres REQUIRED)
@@ -41,14 +45,14 @@ set(HEADER_FILES
         include/config.h
         include/DatasetReader.h
         include/KillingFusion.h
-        )
+        include/SDF.h)
 
 set(SOURCE_FILES
         src/main.cpp
         src/KillingFusion.cpp
         src/DatasetReader.cpp
-        )
+        src/SDF.cpp)
 
 ## Targets
-add_executable(exercise_3 ${HEADER_FILES} ${SOURCE_FILES})
-target_link_libraries(exercise_3 libfreeimage-3.17.0.so "${OpenMP_CXX_FLAGS}" ${FLANN_LIBRARIES} ${CERES_LIBRARIES})
+add_executable(KillingFusion ${HEADER_FILES} ${SOURCE_FILES})
+target_link_libraries(KillingFusion "${OpenMP_CXX_FLAGS}" ${FLANN_LIBRARIES} ${CERES_LIBRARIES} ${OpenCV_LIBS})
