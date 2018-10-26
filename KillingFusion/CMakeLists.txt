@@ -1,0 +1,54 @@
+cmake_minimum_required(VERSION 3.3)
+project(KillingFusion C CXX)
+
+set(CMAKE_CXX_STANDARD 14)
+
+# https://stackoverflow.com/q/12399422/1874627
+find_package(OpenMP REQUIRED)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+add_definitions(-DPROJECT_DIR="${PROJECT_SOURCE_DIR}")
+
+find_package(PkgConfig REQUIRED)
+
+## Eigen3
+FIND_PACKAGE(Eigen3 REQUIRED)
+INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
+
+# Ceres Solver
+find_package(Ceres REQUIRED)
+include_directories(${CERES_INCLUDE_DIRS})
+
+# Flann
+pkg_check_modules(FLANN REQUIRED flann)
+include_directories(${FLANN_INCLUDE_DIRS})
+
+## Definitions
+add_definitions(-DPROJECT_DIR="${PROJECT_SOURCE_DIR}")
+add_definitions(-DDATA_DIR="${PROJECT_SOURCE_DIR}/data/")
+
+## Definitions
+add_definitions( -DDATA_DIR="/home/sk/windows/workspace/Dataset/Deformable\ 3D\ Reconstruction\ Dataset-Mira/" )
+
+# Set files to be compiled
+include_directories(${PROJECT_SOURCE_DIR}/include)
+set(HEADER_FILES
+        include/config.h
+        include/DatasetReader.h
+        include/KillingFusion.h
+        )
+
+set(SOURCE_FILES
+        src/main.cpp
+        src/KillingFusion.cpp
+        src/DatasetReader.cpp
+        )
+
+## Targets
+add_executable(exercise_3 ${HEADER_FILES} ${SOURCE_FILES})
+target_link_libraries(exercise_3 libfreeimage-3.17.0.so "${OpenMP_CXX_FLAGS}" ${FLANN_LIBRARIES} ${CERES_LIBRARIES})
