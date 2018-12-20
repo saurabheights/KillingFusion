@@ -7,33 +7,41 @@
 
 #include <string>
 #include <vector>
+#include <config.h>
+#include <opencv2/opencv.hpp>
+#include <Eigen/Eigen>
 
-class DatasetReader {
- private:
-
+class DatasetReader
+{
+private:
   std::string m_imageDir;
-  std::string m_depthFilePattern;
-  std::string m_colorFilePattern;
-  std::string m_omaskFilePattern;
-  std::vector<float>  m_intrinsicParams;
+  Eigen::Matrix3f m_depthIntrinsicMatrix;
   int m_numImageFiles;
+  int m_depthHeight, m_depthWidth;
+  std::pair<float, float> m_minMaxDepth;
 
   std::vector<float> LoadMatrixFromFile(std::string filename, int M);
+  cv::Mat readDepthImage(std::string depthFilename);
+  void analyzeMinMaxDepthValues();
 
- public:
-
+public:
   DatasetReader() = delete;
 
-  DatasetReader(std::string imageDir,
-                std::string depthFilePattern,
-                std::string colorFilePattern,
-                std::string omaskFilePattern,
-                std::string intrinsicParamsFile,
-                int numImageFiles);
+  DatasetReader(std::string DatasetRootDir, DEFORMABLE_DATASET dataset);
 
-  void loadImages();
+  std::vector<cv::Mat> getImages(int frameIndex);
 
   int getNumImageFiles() const;
+  int getDepthHeight();
+  int getDepthWidth();
+  Eigen::Matrix3f getDepthIntrinsicMatrix();
+
+  float getMinimumDepthThreshold() { return m_minMaxDepth.first; }
+  float getMaximumDepthThreshold() { return m_minMaxDepth.second; }
+  
+  // Hard Coded values
+  static float getVoxelSize() { return 0.01; }
+  static float getTruncationDistanceInVoxelSize() { return 3.0; }
 };
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_DATASETREADER_H

@@ -36,9 +36,6 @@ include_directories(${FLANN_INCLUDE_DIRS})
 add_definitions(-DPROJECT_DIR="${PROJECT_SOURCE_DIR}")
 add_definitions(-DDATA_DIR="${PROJECT_SOURCE_DIR}/data/")
 
-## Definitions
-add_definitions( -DDATA_DIR="/home/sk/windows/workspace/Dataset/Deformable\ 3D\ Reconstruction\ Dataset-Mira/" )
-
 # Set files to be compiled
 include_directories(${PROJECT_SOURCE_DIR}/include)
 set(HEADER_FILES
@@ -48,6 +45,7 @@ set(HEADER_FILES
         include/SDF.h)
 
 set(SOURCE_FILES
+        src/config.cpp
         src/main.cpp
         src/KillingFusion.cpp
         src/DatasetReader.cpp
