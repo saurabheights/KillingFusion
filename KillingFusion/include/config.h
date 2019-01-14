@@ -9,7 +9,8 @@
 
 // ToDo: later add another layer of VariationalFusion between main and KillingFusion class and further
 // add the Solobev Fusion.
-enum FusionTechnique {
+enum FusionTechnique
+{
   KILLING_FUSION
 };
 
@@ -19,11 +20,14 @@ const extern FusionTechnique fusionTechnique;
  * Mira Slavcheva Deformable Dataset Parameters
  * See: campar.in.tum.de/personal/slavcheva/deformable-dataset/index.html
  */
-enum DEFORMABLE_DATASET {
-  DUCK = 0, SNOOPY=1
+enum DEFORMABLE_DATASET
+{
+  DUCK = 0,
+  SNOOPY = 1
 };
 extern int numImageFiles[2];
 extern std::string imageDir[2];
 extern std::string intrinsicParamsFile;
+extern float datasetDepthMinMaxValues[2][2];
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_CONFIG_H

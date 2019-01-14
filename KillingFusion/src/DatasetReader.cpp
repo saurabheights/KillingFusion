@@ -11,16 +11,17 @@
 #include <opencv2/opencv.hpp>
 #include <Eigen/Eigen>
 
-DatasetReader::DatasetReader(std::string DatasetRootDir, DEFORMABLE_DATASET dataset) {
+DatasetReader::DatasetReader(const std::string DatasetRootDir, const DEFORMABLE_DATASET dataset)
+{
   m_imageDir = DatasetRootDir + imageDir[dataset];
   m_numImageFiles = numImageFiles[dataset];
   std::vector<float> intrinsicParams = LoadMatrixFromFile(DatasetRootDir + intrinsicParamsFile, 3 * 3);
   m_depthIntrinsicMatrix << intrinsicParams[0], intrinsicParams[1], intrinsicParams[2],
-          intrinsicParams[3], intrinsicParams[4], intrinsicParams[5],
-          intrinsicParams[6], intrinsicParams[7], intrinsicParams[8];
+      intrinsicParams[3], intrinsicParams[4], intrinsicParams[5],
+      intrinsicParams[6], intrinsicParams[7], intrinsicParams[8];
   m_depthHeight = 480;
   m_depthWidth = 640;
-  analyzeMinMaxDepthValues();
+  analyzeMinMaxDepthValues(dataset);
 }
 
 /**
@@ -62,7 +63,16 @@ int DatasetReader::getNumImageFiles() const {
   return m_numImageFiles;
 }
 
-void DatasetReader::analyzeMinMaxDepthValues() {
+void DatasetReader::analyzeMinMaxDepthValues(const DEFORMABLE_DATASET dataset)
+{
+  if (dataset < 2) // Always true in current case.
+  {
+    // Using cached values
+    m_minMaxDepth = std::pair<float, float>(datasetDepthMinMaxValues[dataset][0],
+                                            datasetDepthMinMaxValues[dataset][1]);
+    return;
+  }
+
   std::vector<float> minDepths, maxDepths;
   minDepths.reserve(getNumImageFiles());
   maxDepths.reserve(getNumImageFiles());

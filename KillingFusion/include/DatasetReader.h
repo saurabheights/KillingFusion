@@ -22,12 +22,12 @@ private:
 
   std::vector<float> LoadMatrixFromFile(std::string filename, int M);
   cv::Mat readDepthImage(std::string depthFilename);
-  void analyzeMinMaxDepthValues();
+  void analyzeMinMaxDepthValues(const DEFORMABLE_DATASET dataset);
 
 public:
   DatasetReader() = delete;
 
-  DatasetReader(std::string DatasetRootDir, DEFORMABLE_DATASET dataset);
+  DatasetReader(const std::string DatasetRootDir, const DEFORMABLE_DATASET dataset);
 
   std::vector<cv::Mat> getImages(int frameIndex);
 
