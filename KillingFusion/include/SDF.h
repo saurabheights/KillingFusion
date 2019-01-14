@@ -8,14 +8,17 @@
 #include <Eigen/Eigen>
 #include <opencv2/opencv.hpp>
 #include <iostream>
+#include <vector>
 
 class SDF
 {
   Eigen::Vector3i m_gridSize;
   Eigen::Vector3f m_min3dLoc;
   Eigen::Vector3f m_max3dLoc;
-  float *m_voxelGridTSDF;
-  float *m_voxelGridWeight;
+  // ToDo - Change to vector of vector of vector.
+  // Makes notation much simpler as well as reduces the computation of indices.
+  std::vector<float> m_voxelGridTSDF;
+  std::vector<float> m_voxelGridWeight;
   float m_voxelSize;
   Eigen::Vector3f m_bound;
   float m_truncationDistanceInVoxelSize;

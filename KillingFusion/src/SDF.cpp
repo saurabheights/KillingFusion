@@ -8,26 +8,21 @@ using namespace std;
 SDF::SDF(float _voxelSize,
          Eigen::Vector3f _min3dLoc,
          Eigen::Vector3f _max3dLoc,
-         float truncationDistanceInVoxelSize) : m_voxelSize{_voxelSize}, m_bound{_max3dLoc - _min3dLoc} {
+         float truncationDistanceInVoxelSize)
+    : m_voxelSize{_voxelSize},
+      m_bound{_max3dLoc - _min3dLoc}
+{
     m_min3dLoc = _min3dLoc;
     m_max3dLoc = _max3dLoc;
 
     m_truncationDistanceInVoxelSize = truncationDistanceInVoxelSize;
 
-    m_voxelGridTSDF = nullptr;
-    m_voxelGridWeight = nullptr;
-
     computeVoxelGridSize();
     allocateMemoryForSDF();
 }
 
-SDF::~SDF() {
-    if (m_voxelGridTSDF != nullptr) {
-        delete[](m_voxelGridTSDF);
-        delete[](m_voxelGridWeight);
-        m_voxelGridTSDF = nullptr;
-        m_voxelGridWeight = nullptr;
-    }
+SDF::~SDF()
+{
 }
 
 void SDF::computeVoxelGridSize() {
@@ -39,22 +34,16 @@ void SDF::computeVoxelGridSize() {
     cout << "Grid Size computed is: " << m_gridSize.transpose() << "\n";
 }
 
-void SDF::allocateMemoryForSDF() {
+void SDF::allocateMemoryForSDF()
+{
     // Initialize voxel grid
-    if (m_voxelGridTSDF != nullptr) {
-        delete[](m_voxelGridTSDF);
-        delete[](m_voxelGridWeight);
-        m_voxelGridTSDF = nullptr;
-        m_voxelGridWeight = nullptr;
-    }
     int num_grid_elements = m_gridSize.prod();
-    m_voxelGridTSDF = new float[num_grid_elements];
-    m_voxelGridWeight = new float[num_grid_elements];
+    m_voxelGridTSDF.resize(num_grid_elements);
+    m_voxelGridWeight.resize(num_grid_elements);
     // Set the distance to 1, since 1 represents each point is too far from the surface.
     // This is done for any voxel which had no correspondences in the image and thus was never processed.
-    for (int i = 0; i < num_grid_elements; ++i)
-        m_voxelGridTSDF[i] = 1.0f;
-    memset(m_voxelGridWeight, 0, sizeof(float) * num_grid_elements);
+    std::fill(m_voxelGridTSDF.begin(), m_voxelGridTSDF.end(), 1.0f);
+    std::fill(m_voxelGridWeight.begin(), m_voxelGridWeight.end(), 0.0f);
 }
 
 void SDF::integrateDepthFrame(cv::Mat depthFrame,
@@ -139,9 +128,10 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
 
                 // Merge the signed distance in this voxel
                 int index = z * (m_gridSize(1) * m_gridSize(0)) + y * m_gridSize(0) + x;
-                m_voxelGridTSDF[index] =
-                    (m_voxelGridTSDF[index] * m_voxelGridWeight[index] + dist) / (m_voxelGridWeight[index] + 1);
-                m_voxelGridWeight[index] += 1;
+                m_voxelGridTSDF.at(index) =
+                    (m_voxelGridTSDF.at(index) * m_voxelGridWeight.at(index) + dist) / 
+                    (m_voxelGridWeight.at(index) + 1);
+                m_voxelGridWeight.at(index) += 1;
             }
         }
     }
@@ -158,7 +148,7 @@ void SDF::dumpToBinFile(string outputFilePath,
     outFile.write((char *) m_min3dLoc.data(), 3 * sizeof(float));
     outFile.write((char *) &m_voxelSize, sizeof(float));
     outFile.write((char *) &truncationDistanceInVoxelSizeUnit, sizeof(float));
-    outFile.write((char *) m_voxelGridTSDF, m_gridSize(0) * m_gridSize(1) * m_gridSize(2) * sizeof(float));
+    outFile.write((char *)(&m_voxelGridTSDF[0]), m_gridSize.prod() * sizeof(float));
     outFile.close();
 
     float min = m_voxelGridTSDF[0];
