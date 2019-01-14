@@ -28,6 +28,31 @@ class KillingFusion
   std::pair<Eigen::Vector3f, Eigen::Vector3f> computeBounds(int w, int h, float minDepth, float maxDepth);
   DisplacementField *createZeroDisplacementField(const SDF &sdf);
 
+  /**
+   * Main Killing Methods
+   */
+  void computeDisplacementField(const SDF *src,
+                                const SDF *dest,
+                                DisplacementField *srcToDest);
+  Eigen::Vector3f computeEnergyGradient(const SDF *src,
+                                        const SDF *dest,
+                                        const DisplacementField *srcDisplacementField,
+                                        const Eigen::Vector3i &spatialIndex,
+                                        const Eigen::Vector3f &p);
+  Eigen::Vector3f computeDataEnergyGradient(const SDF *src,
+                                            const SDF *dest,
+                                            const DisplacementField *srcDisplacementField,
+                                            const Eigen::Vector3i &spatialIndex,
+                                            const Eigen::Vector3f &p);
+  Eigen::Vector3f computeKillingEnergyGradient(const SDF *src,
+                                               const DisplacementField *srcDisplacementField,
+                                               const Eigen::Vector3i &spatialIndex,
+                                               const Eigen::Vector3f &p);
+  Eigen::Vector3f computeLevelSetEnergyGradient(const SDF *src,
+                                                const DisplacementField *srcDisplacementField,
+                                                const Eigen::Vector3i &spatialIndex,
+                                                const Eigen::Vector3f &p);
+
 public:
   KillingFusion() = delete;
   KillingFusion(DatasetReader datasetReader);

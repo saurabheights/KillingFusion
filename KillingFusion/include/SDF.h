@@ -9,6 +9,7 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <vector>
+#include "DisplacementField.h"
 
 class SDF
 {
@@ -50,6 +51,12 @@ public:
                            float minDepth,
                            float maxDepth);
 
+  /**
+   * Get value at spatial index. 
+   */
+  float getDistanceAtIndex(const Eigen::Vector3i &gridSpatialIndex) const;
+
+  void fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementField);
   /**
      * Writes the SDF to a file
      * @param outputFilePath

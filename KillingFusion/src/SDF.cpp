@@ -139,7 +139,8 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
 
 void SDF::dumpToBinFile(string outputFilePath,
                         float truncationDistanceInVoxelSizeUnit,
-                        float minimumWeightThreshold) {
+                        float minimumWeightThreshold)
+{
     // Save TSDF voxel grid and its parameters to disk as binary file (float array)
     cout << "============================================================================\n";
     cout << "Saving TSDF voxel grid values at " << outputFilePath << "\n";
@@ -163,4 +164,8 @@ void SDF::dumpToBinFile(string outputFilePath,
     cout << "Minimum SDF value is " << min << " and max value is " << max << "\n";
     cout << "TSDF voxel grid values saved at " << outputFilePath << "\n";
     cout << "============================================================================\n";
+}
+
+void SDF::fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementField)
+{
 }

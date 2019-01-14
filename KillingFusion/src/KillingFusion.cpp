@@ -22,7 +22,7 @@ KillingFusion::~KillingFusion()
 void KillingFusion::process()
 {
   DisplacementField *prev2CanDisplacementField;
-  DisplacementField *curr2PrevDisplacementField;
+  DisplacementField *curr2CanDisplacementField;
 
   // Create a canonical SDF
   m_canonicalSdf = computeSDF(0);
@@ -39,17 +39,18 @@ void KillingFusion::process()
 
     // Future Task - Implement SDF-2-SDF to register currSDF to prevSDF
     // Future Task - ToDo - DisplacementField should have same shape as their SDF.
-    curr2PrevDisplacementField = prev2CanDisplacementField;
+    curr2CanDisplacementField = prev2CanDisplacementField;
 
     // Compute Deformation Field for current frame SDF to merge with m_canonicalSdf
+    computeDisplacementField(currSdf, m_canonicalSdf, curr2CanDisplacementField);
 
-    // Apply VariationalFramework to minimize the distance between currSdf
     // Merge the m_currSdf to m_canonicalSdf using m_currSdf displacement field.
+    m_canonicalSdf->fuse(currSdf, curr2CanDisplacementField);
 
     // Delete m_prevSdf and assign m_currSdf to m_prevSdf
     delete prevSdf;
     prevSdf = currSdf;
-    prev2CanDisplacementField = curr2PrevDisplacementField;
+    prev2CanDisplacementField = curr2CanDisplacementField;
   }
   m_canonicalSdf->dumpToBinFile("outputDownSampled.bin",
                                 DatasetReader::getTruncationDistanceInVoxelSize(), 1.0f);
@@ -82,6 +83,62 @@ DisplacementField *KillingFusion::createZeroDisplacementField(const SDF &sdf)
                                DatasetReader::getVoxelSize(),
                                sdf.getMin3dLoc(),
                                sdf.getMax3dLoc());
+}
+
+void KillingFusion::computeDisplacementField(const SDF *src,
+                                             const SDF *dest,
+                                             DisplacementField *srcToDest)
+{
+  // ToDo: Use Cuda.
+  // Process at each voxel location
+  Eigen::Vector3i srcGridSize = src->getGridSize();
+
+  // Compute gradient of src voxel displacement to move it toward destination voxel
+  for (int z = 0; z < srcGridSize(2); z++)
+  {
+    for (int y = 0; y < srcGridSize(1); y++)
+    {
+      for (int x = 0; x < srcGridSize(0); x++)
+      {
+      }
+    }
+  }
+}
+
+Eigen::Vector3f KillingFusion::computeEnergyGradient(const SDF *src,
+                                                     const SDF *dest,
+                                                     const DisplacementField *srcDisplacementField,
+                                                     const Eigen::Vector3i &spatialIndex,
+                                                     const Eigen::Vector3f &p)
+{
+  return computeDataEnergyGradient(src, dest, srcDisplacementField, spatialIndex, p) +
+         computeKillingEnergyGradient(src, srcDisplacementField, spatialIndex, p) * omegaKilling +
+         computeLevelSetEnergyGradient(src, srcDisplacementField, spatialIndex, p) * omegaLevelSet;
+}
+
+Eigen::Vector3f KillingFusion::computeDataEnergyGradient(const SDF *src,
+                                                         const SDF *dest,
+                                                         const DisplacementField *srcDisplacementField,
+                                                         const Eigen::Vector3i &spatialIndex,
+                                                         const Eigen::Vector3f &p)
+{
+  return Eigen::Vector3f::Zero();
+}
+
+Eigen::Vector3f KillingFusion::computeKillingEnergyGradient(const SDF *src,
+                                                            const DisplacementField *srcDisplacementField,
+                                                            const Eigen::Vector3i &spatialIndex,
+                                                            const Eigen::Vector3f &p)
+{
+  return Eigen::Vector3f::Zero();
+}
+
+Eigen::Vector3f KillingFusion::computeLevelSetEnergyGradient(const SDF *src,
+                                                             const DisplacementField *srcDisplacementField,
+                                                             const Eigen::Vector3i &spatialIndex,
+                                                             const Eigen::Vector3f &p)
+{
+  return Eigen::Vector3f::Zero();
 }
 
 std::pair<Eigen::Vector3f, Eigen::Vector3f> KillingFusion::computeBounds(int w, int h, float minDepth, float maxDepth)

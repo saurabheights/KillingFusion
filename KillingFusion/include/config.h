@@ -30,4 +30,13 @@ extern std::string imageDir[2];
 extern std::string intrinsicParamsFile;
 extern float datasetDepthMinMaxValues[2][2];
 
+/**
+ * Killing Fusion Pipeline configuration
+ */
+
+// Killing condition weights 
+extern float omegaKilling;
+
+// Level-set condition weights
+extern float omegaLevelSet;
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_CONFIG_H

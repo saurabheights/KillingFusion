@@ -9,3 +9,9 @@ float datasetDepthMinMaxValues[2][2] = {
     {0.0497470f, 3.66115f},
     {0.0495164f, 3.40335f}
 };
+
+/**
+ * Killing Fusion Pipeline configuration
+ */
+float omegaKilling = 0.5f;
+float omegaLevelSet = 0.2f;
