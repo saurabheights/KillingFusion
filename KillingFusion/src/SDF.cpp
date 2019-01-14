@@ -25,12 +25,12 @@ SDF::~SDF()
 {
 }
 
-void SDF::computeVoxelGridSize() {
+void SDF::computeVoxelGridSize()
+{
     cout << "Bound is: " << m_bound.transpose() << "\n";
     cout << "Voxel Size is: " << m_voxelSize << "\n";
-    Eigen::Vector3i ones(1, 1, 1);
     // Casting may reduce size by 1.
-    m_gridSize = ((m_bound / m_voxelSize)).cast<int>() + ones;
+    m_gridSize = ((m_bound / m_voxelSize)).cast<int>().array() + 1;
     cout << "Grid Size computed is: " << m_gridSize.transpose() << "\n";
 }
 
