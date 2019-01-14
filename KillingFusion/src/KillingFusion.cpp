@@ -6,21 +6,17 @@
 #include "SDF.h"
 using namespace std;
 
-KillingFusion::KillingFusion(DatasetReader datasetReader) : m_datasetReader(datasetReader),
-                                                            m_canonicalSdf(nullptr),
-                                                            m_currSdf(nullptr),
-                                                            m_prevSdf(nullptr) {}
+KillingFusion::KillingFusion(DatasetReader datasetReader)
+    : m_datasetReader(datasetReader),
+      m_canonicalSdf(nullptr)
+{
+}
 
 KillingFusion::~KillingFusion()
 {
+  // ToDo - Use Unique Ptr
   if (m_canonicalSdf != nullptr)
     delete m_canonicalSdf;
-
-  if (m_prevSdf != nullptr) 
-    delete m_prevSdf;
-
-  if (m_currSdf != nullptr)
-    delete m_currSdf;
 }
 
 void KillingFusion::process()
@@ -28,26 +24,28 @@ void KillingFusion::process()
   // Create a canonical SDF
   m_canonicalSdf = computeSDF(0);
 
-  // Save prevSdf to firest frame SDF
-  m_prevSdf = computeSDF(0);
-
-  // Save prev2can (previous to canonical displacement field) to null
+  // Save prevSdf to first frame SDF
+  const SDF *prevSdf = m_canonicalSdf;
 
   // For each file in DatasetReader
   for (int i = 1; i < m_datasetReader.getNumImageFiles(); ++i)
   {
-    // Convert to SDF - currSdf
-    m_currSdf = computeSDF(i);
+    // Convert current frame to SDF - currSdf
+    SDF *currSdf = computeSDF(i);
 
     // Register currSDF to prevSDF using SDF-2-SDF framework and compure cur2prev displacement field
 
-    // Compute cur2can displacement field by adding cur2prev to prev2can sdfDisplacementField
+    // Compute Deformation Field for current frame SDF to merge with m_canonicalSdf
 
     // Apply VariationalFramework to minimize the distance between currSdf
+    // Merge the m_currSdf to m_canonicalSdf using m_currSdf displacement field.
 
-    // Merge the m_currSdf to m_canonicalSdf using displacement field. 
+    // Delete m_prevSdf and assign m_currSdf to m_prevSdf
+    delete prevSdf;
+    prevSdf = currSdf;
   }
-  m_canonicalSdf->dumpToBinFile("output.bin", DatasetReader::getTruncationDistanceInVoxelSize(), 1.0f);
+  m_canonicalSdf->dumpToBinFile("outputDownSampled.bin",
+                                DatasetReader::getTruncationDistanceInVoxelSize(), 1.0f);
 }
 
 SDF *KillingFusion::computeSDF(int frameIndex)
