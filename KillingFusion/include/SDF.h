@@ -19,10 +19,12 @@ class SDF
   // ToDo - Change to vector of vector of vector.
   // Makes notation much simpler as well as reduces the computation of indices.
   std::vector<float> m_voxelGridTSDF;
-  std::vector<float> m_voxelGridWeight;
+  std::vector<long> m_voxelGridWeight;
   float m_voxelSize;
+  Eigen::Vector3i m_gridSpacingPerAxis;
   Eigen::Vector3f m_bound;
   float m_truncationDistanceInVoxelSize;
+
   void computeVoxelGridSize();
   void allocateMemoryForSDF();
 
@@ -56,11 +58,31 @@ public:
    */
   float getDistanceAtIndex(const Eigen::Vector3i &gridSpatialIndex) const;
 
-  void fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementField);
   /**
-     * Writes the SDF to a file
-     * @param outputFilePath
-     */
+   * Get value at grid location. 
+   */
+  float getDistance(const Eigen::Vector3f &gridLocation) const;
+
+  /**
+   * This function computes distance gradient at any index location.
+   * 
+   */
+  Eigen::Vector3f computeDistanceGradient(const Eigen::Vector3f &worldLocation) const;
+
+  /**
+   * Fuses otherSdf which should be of same size as this.
+   **/
+  void fuse(const SDF *otherSdf);
+
+  /**
+   * Fuses otherSdf using its DisplacementField
+   **/
+  void fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementField);
+
+  /**
+   * Writes the SDF to a file
+   * @param outputFilePath
+   */
   void dumpToBinFile(std::string outputFilePath,
                      float truncationDistanceInVoxelSizeUnit,
                      float minimumWeightThreshold);

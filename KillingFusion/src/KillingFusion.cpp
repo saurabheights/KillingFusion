@@ -10,6 +10,16 @@ KillingFusion::KillingFusion(DatasetReader datasetReader)
     : m_datasetReader(datasetReader),
       m_canonicalSdf(nullptr)
 {
+  // Create a canonical SDF
+  int w = m_datasetReader.getDepthWidth();
+  int h = m_datasetReader.getDepthHeight();
+  float minDepth = m_datasetReader.getMinimumDepthThreshold();
+  float maxDepth = m_datasetReader.getMaximumDepthThreshold();
+  std::pair<Eigen::Vector3f, Eigen::Vector3f> frameBound = computeBounds(w, h, minDepth, maxDepth);
+  m_canonicalSdf = new SDF(DatasetReader::getVoxelSize(),
+                     frameBound.first,
+                     frameBound.second,
+                     DatasetReader::getTruncationDistanceInVoxelSize());
 }
 
 KillingFusion::~KillingFusion()
@@ -24,12 +34,10 @@ void KillingFusion::process()
   DisplacementField *prev2CanDisplacementField;
   DisplacementField *curr2CanDisplacementField;
 
-  // Create a canonical SDF
-  m_canonicalSdf = computeSDF(0);
-
-  // Save prevSdf to first frame SDF
-  const SDF *prevSdf = m_canonicalSdf;
+  // Set prevSdf to SDF of first frame
+  const SDF *prevSdf = computeSDF(0);
   prev2CanDisplacementField = createZeroDisplacementField(*prevSdf);
+  m_canonicalSdf->fuse(prevSdf);
 
   // For each file in DatasetReader
   for (int i = 1; i < m_datasetReader.getNumImageFiles(); ++i)
