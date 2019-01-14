@@ -6,6 +6,7 @@
 #define INC_3DSCANNINGANDMOTIONCAPTURE_FUSION_H
 
 #include "DatasetReader.h"
+#include "DisplacementField.h"
 #include "SDF.h"
 #include <Eigen/Eigen>
 
@@ -25,7 +26,9 @@ class KillingFusion
    * Computes Bound of SDF for all the frames. 
    */
   std::pair<Eigen::Vector3f, Eigen::Vector3f> computeBounds(int w, int h, float minDepth, float maxDepth);
- public:
+  DisplacementField *createZeroDisplacementField(const SDF &sdf);
+
+public:
   KillingFusion() = delete;
   KillingFusion(DatasetReader datasetReader);
   ~KillingFusion();

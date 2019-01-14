@@ -57,6 +57,24 @@ public:
   void dumpToBinFile(std::string outputFilePath,
                      float truncationDistanceInVoxelSizeUnit,
                      float minimumWeightThreshold);
+
+  /**
+   * Getters
+   */
+  Eigen::Vector3f getMin3dLoc() const
+  {
+    return m_min3dLoc;
+  };
+
+  Eigen::Vector3f getMax3dLoc() const
+  {
+    return m_max3dLoc;
+  };
+
+  Eigen::Vector3i getGridSize() const
+  {
+    return m_gridSize;
+  };
 };
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_SDF_H

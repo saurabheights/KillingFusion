@@ -42,14 +42,16 @@ set(HEADER_FILES
         include/config.h
         include/DatasetReader.h
         include/KillingFusion.h
-        include/SDF.h)
+        include/SDF.h
+        include/DisplacementField.h)
 
 set(SOURCE_FILES
         src/config.cpp
         src/main.cpp
         src/KillingFusion.cpp
         src/DatasetReader.cpp
-        src/SDF.cpp)
+        src/SDF.cpp
+        src/DisplacementField.cpp)
 
 ## Targets
 add_executable(KillingFusion ${HEADER_FILES} ${SOURCE_FILES})

@@ -21,11 +21,15 @@ KillingFusion::~KillingFusion()
 
 void KillingFusion::process()
 {
+  DisplacementField *prev2CanDisplacementField;
+  DisplacementField *curr2PrevDisplacementField;
+
   // Create a canonical SDF
   m_canonicalSdf = computeSDF(0);
 
   // Save prevSdf to first frame SDF
   const SDF *prevSdf = m_canonicalSdf;
+  prev2CanDisplacementField = createZeroDisplacementField(*prevSdf);
 
   // For each file in DatasetReader
   for (int i = 1; i < m_datasetReader.getNumImageFiles(); ++i)
@@ -33,7 +37,9 @@ void KillingFusion::process()
     // Convert current frame to SDF - currSdf
     SDF *currSdf = computeSDF(i);
 
-    // Register currSDF to prevSDF using SDF-2-SDF framework and compure cur2prev displacement field
+    // Future Task - Implement SDF-2-SDF to register currSDF to prevSDF
+    // Future Task - ToDo - DisplacementField should have same shape as their SDF.
+    curr2PrevDisplacementField = prev2CanDisplacementField;
 
     // Compute Deformation Field for current frame SDF to merge with m_canonicalSdf
 
@@ -43,6 +49,7 @@ void KillingFusion::process()
     // Delete m_prevSdf and assign m_currSdf to m_prevSdf
     delete prevSdf;
     prevSdf = currSdf;
+    prev2CanDisplacementField = curr2PrevDisplacementField;
   }
   m_canonicalSdf->dumpToBinFile("outputDownSampled.bin",
                                 DatasetReader::getTruncationDistanceInVoxelSize(), 1.0f);
@@ -67,6 +74,14 @@ SDF *KillingFusion::computeSDF(int frameIndex)
                            minDepth,
                            maxDepth);
   return sdf;
+}
+
+DisplacementField *KillingFusion::createZeroDisplacementField(const SDF &sdf)
+{
+  return new DisplacementField(sdf.getGridSize(),
+                               DatasetReader::getVoxelSize(),
+                               sdf.getMin3dLoc(),
+                               sdf.getMax3dLoc());
 }
 
 std::pair<Eigen::Vector3f, Eigen::Vector3f> KillingFusion::computeBounds(int w, int h, float minDepth, float maxDepth)
