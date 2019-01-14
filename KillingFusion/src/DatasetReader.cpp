@@ -32,10 +32,12 @@ DatasetReader::DatasetReader(const std::string DatasetRootDir, const DEFORMABLE_
  * @param M The number of elements in matrix
  * @return A vector of all the values read as float.
  */
-std::vector<float> DatasetReader::LoadMatrixFromFile(std::string filename, int M) {
+std::vector<float> DatasetReader::LoadMatrixFromFile(std::string filename, int M)
+{
   std::vector<float> matrix;
   FILE *fp = fopen(filename.c_str(), "r");
-  for (int i = 0; i < M; i++) {
+  for (int i = 0; i < M; i++)
+  {
     float tmp;
     int iret = fscanf(fp, "%f", &tmp);
     matrix.push_back(tmp);
@@ -44,7 +46,8 @@ std::vector<float> DatasetReader::LoadMatrixFromFile(std::string filename, int M
   return matrix;
 }
 
-std::vector<cv::Mat> DatasetReader::getImages(int frameIndex) {
+std::vector<cv::Mat> DatasetReader::getImages(int frameIndex)
+{
   std::ostringstream frameSuffix;
   frameSuffix << std::setw(6) << std::setfill('0') << frameIndex;
   std::string suffix = frameSuffix.str();
@@ -59,7 +62,8 @@ std::vector<cv::Mat> DatasetReader::getImages(int frameIndex) {
   return cdoImages;
 }
 
-int DatasetReader::getNumImageFiles() const {
+int DatasetReader::getNumImageFiles() const
+{
   return m_numImageFiles;
 }
 
@@ -77,26 +81,30 @@ void DatasetReader::analyzeMinMaxDepthValues(const DEFORMABLE_DATASET dataset)
   minDepths.reserve(getNumImageFiles());
   maxDepths.reserve(getNumImageFiles());
 
-  for(size_t frameIndex = 0; frameIndex < getNumImageFiles(); frameIndex++)
-  { 
+  for (size_t frameIndex = 0; frameIndex < getNumImageFiles(); frameIndex++)
+  {
     std::vector<cv::Mat> cdoImages = getImages(frameIndex);
     cv::Mat depthMat = cdoImages.at(1);
     cv::Mat omaskMat = cdoImages.at(2);
     int H = depthMat.rows;
     int W = depthMat.cols;
     float min = std::numeric_limits<float>::max();
-    float max = std::numeric_limits<float>::min();;
+    float max = std::numeric_limits<float>::min();
     for (int r = 0; r < H; ++r)
     {
       for (int c = 0; c < W; ++c)
       {
         uchar isForegroundPixel = omaskMat.at<uchar>(r, c);
-        if ( isForegroundPixel != 0) {
+        if (isForegroundPixel != 0)
+        {
           float depth = depthMat.at<float>(r, c);
-          if(min > depth && depth > 0) { // Ignore 0 values which represent invalid data
+          // Ignore 0 values which represent invalid data
+          if (min > depth && depth > 0)
+          {
             min = depth;
           }
-          if(max < depth) {
+          if (max < depth)
+          {
             max = depth;
           }
         }
@@ -106,36 +114,41 @@ void DatasetReader::analyzeMinMaxDepthValues(const DEFORMABLE_DATASET dataset)
     maxDepths.push_back(max);
     std::cout << "Depth Frame " << frameIndex << " has valid min*, max value as : " << min << ", " << max << '\n';
   }
-  std::sort (minDepths.begin(), minDepths.end());
-  std::sort (maxDepths.begin(), maxDepths.end());
-  std::cout << "Minimum and Maximum depth in all frames= " << minDepths.at(0) << " " << maxDepths.at(maxDepths.size()-1) << std::endl;
-  m_minMaxDepth = std::pair<float, float>(minDepths.at(0), maxDepths.at(maxDepths.size()-1));
+  std::sort(minDepths.begin(), minDepths.end());
+  std::sort(maxDepths.begin(), maxDepths.end());
+  std::cout << "Minimum and Maximum depth in all frames= " << minDepths.at(0) << " " << maxDepths.at(maxDepths.size() - 1) << std::endl;
+  m_minMaxDepth = std::pair<float, float>(minDepths.at(0), maxDepths.at(maxDepths.size() - 1));
 }
 
-cv::Mat DatasetReader::readDepthImage(std::string depthFilename) {
+cv::Mat DatasetReader::readDepthImage(std::string depthFilename)
+{
   cv::Mat depthImage = cv::imread(depthFilename, CV_LOAD_IMAGE_UNCHANGED);
-  if (depthImage.empty()) {
+  if (depthImage.empty())
+  {
     std::cout << "Error: depth image file not read!\n";
     cv::waitKey(0);
     exit(-1);
   }
 
   cv::Mat depthFloatImage(depthImage.size(), CV_32FC1);
-  depthImage.convertTo(depthFloatImage, CV_32FC1, 1.0 / 1000); // ToDo:  Move depthShift to config.h 
+  depthImage.convertTo(depthFloatImage, CV_32FC1, 1.0 / 1000); // ToDo:  Move depthShift to config.h
   double minVal, maxVal;
   cv::minMaxLoc(depthFloatImage, &minVal, &maxVal);
   std::cout << "Depth Frame " << depthFilename.substr(depthFilename.size() - 7,3) << " has min, max value as : " << minVal << ", " << maxVal << '\n';
   return depthFloatImage;
 }
 
-int DatasetReader::getDepthHeight() {
+int DatasetReader::getDepthHeight()
+{
   return m_depthHeight;
 }
 
-int DatasetReader::getDepthWidth() {
+int DatasetReader::getDepthWidth()
+{
   return m_depthWidth;
 }
 
-Eigen::Matrix3f DatasetReader::getDepthIntrinsicMatrix() {
+Eigen::Matrix3f DatasetReader::getDepthIntrinsicMatrix()
+{
   return m_depthIntrinsicMatrix;
 }
