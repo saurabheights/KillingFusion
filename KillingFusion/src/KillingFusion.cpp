@@ -76,7 +76,11 @@ void KillingFusion::process()
 }
 
 SDF *KillingFusion::computeSDF(int frameIndex)
-{ // ToDo: SDF class should compute itself
+{
+  // ToDo: SDF class should compute itself
+  // This will cause issue. SDF of Different Frames will be of different size.
+  // This will cause deformation field to be of different size.
+  // You then cannot simply set curr2PrevDisplacementField = prev2CanDisplacementField
   // cout << "Computing SDF of frame " << frameIndex << endl;
   int w = m_datasetReader.getDepthWidth();
   int h = m_datasetReader.getDepthHeight();
@@ -114,6 +118,7 @@ void KillingFusion::computeDisplacementField(const SDF *src,
   Eigen::Vector3i srcGridSize = src->getGridSize();
 
   // Compute gradient of src voxel displacement to move it toward destination voxel
+  const float truncationDistanceInVoxelSize = DatasetReader::getTruncationDistanceInVoxelSize();
 
 #pragma omp parallel for schedule(dynamic)
   for (int z = 0; z < srcGridSize(2); z++)
@@ -125,6 +130,18 @@ void KillingFusion::computeDisplacementField(const SDF *src,
         // Actual 3D Point on Desination Grid, where to optimize for.
         Eigen::Vector3i spatialIndex(x, y, z);
         Eigen::Vector3f p = (spatialIndex.array().cast<float>() + 0.5f) * getVoxelSize();
+
+        // ToDo - Use True SDF and do not optimize over voxels at distance 2 * voxelsize from surface.
+        // Currently, hacking this using truncationDistanceInVoxelSize, where truncationDistanceInVoxelSize >=2.
+        Eigen::Vector3f displacedLocation = srcToDest->getDisplacementAt(spatialIndex);
+        Eigen::Vector3f srcGridLocation = p + displacedLocation;
+        float srcSdfTruncatedDistance = src->getDistance(srcGridLocation);
+        float destSdfTruncatedDistance = dest->getDistance(p);
+        if (fabs(srcSdfTruncatedDistance) >= 2 / truncationDistanceInVoxelSize &&
+            fabs(destSdfTruncatedDistance) >= 2 / truncationDistanceInVoxelSize)
+        {
+          continue;
+        }
 
         // Optimize Killing Energy between Source Grid and Desination Grid
         Eigen::Vector3f gradient;
