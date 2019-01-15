@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.9)
 project(KillingFusion C CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -24,13 +24,12 @@ INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
 find_package(OpenCV 3.0 REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-# Ceres Solver
-find_package(Ceres REQUIRED)
-include_directories(${CERES_INCLUDE_DIRS})
-
-# Flann
-pkg_check_modules(FLANN REQUIRED flann)
-include_directories(${FLANN_INCLUDE_DIRS})
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 
 ## Definitions
 add_definitions(-DPROJECT_DIR="${PROJECT_SOURCE_DIR}")
@@ -56,4 +55,4 @@ set(SOURCE_FILES
 
 ## Targets
 add_executable(KillingFusion ${HEADER_FILES} ${SOURCE_FILES})
-target_link_libraries(KillingFusion "${OpenMP_CXX_FLAGS}" ${FLANN_LIBRARIES} ${CERES_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(KillingFusion PRIVATE OpenMP::OpenMP_CXX ${OpenCV_LIBS})

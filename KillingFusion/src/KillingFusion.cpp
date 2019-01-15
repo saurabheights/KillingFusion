@@ -114,6 +114,7 @@ void KillingFusion::computeDisplacementField(const SDF *src,
   Eigen::Vector3i srcGridSize = src->getGridSize();
 
   // Compute gradient of src voxel displacement to move it toward destination voxel
+#pragma omp parallel for schedule(dynamic)
   for (int z = 0; z < srcGridSize(2); z++)
   {
     for (int y = 0; y < srcGridSize(1); y++)

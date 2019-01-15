@@ -140,6 +140,7 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
 
 void SDF::fuse(const SDF *otherSdf)
 {
+#pragma omp parallel for
     for (size_t voxelIndex = 0; voxelIndex < m_totalNumberOfVoxels; voxelIndex++)
     {
         long w2 = otherSdf->m_voxelGridWeight.at(voxelIndex);
@@ -163,6 +164,7 @@ void SDF::fuse(const SDF *otherSdf)
 
 void SDF::fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementField)
 {
+#pragma omp parallel for
     for (int z = 0; z < m_gridSize(2); z++)
     {
         for (int y = 0; y < m_gridSize(1); y++)
