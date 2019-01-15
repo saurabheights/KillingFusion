@@ -182,7 +182,13 @@ Eigen::Vector3f KillingFusion::computeDataEnergyGradient(const SDF *src,
                                                          const Eigen::Vector3i &spatialIndex,
                                                          const Eigen::Vector3f &p)
 {
-  return Eigen::Vector3f::Zero();
+  // Compute first distance gradient. How the distance changes at a given location p
+  Eigen::Vector3f displacedLocation = srcDisplacementField->getDisplacementAt(spatialIndex);
+  Eigen::Vector3f srcGridLocation = p + displacedLocation;
+  Eigen::Vector3f srcDistanceGradient = src->computeDistanceGradient(srcGridLocation);
+  float srcPointDistance = src->getDistance(srcGridLocation);
+  float destPointDistance = dest->getDistanceAtIndex(spatialIndex);
+  return (srcPointDistance - destPointDistance) * srcDistanceGradient.array();
 }
 
 Eigen::Vector3f KillingFusion::computeKillingEnergyGradient(const SDF *src,

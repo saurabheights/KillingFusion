@@ -350,3 +350,28 @@ float SDF::getWeight(const Eigen::Vector3f &gridLocation) const
                          vertex_100, vertex_101, vertex_110, vertex_111,
                          interpolationWeights(0), interpolationWeights(1), interpolationWeights(2));
 }
+
+Eigen::Vector3f SDF::computeDistanceGradient(const Eigen::Vector3f &gridLocation) const
+{
+    // Substract 0.5f since, grid index (x,y,z) stores distance value for center (x,y,z)+(0.5,0.5,0.5)
+    Eigen::Vector3f trueGridLocation = gridLocation.array() - 0.5f;
+    // Check if trueGridLocation is in the grid
+    if ((gridLocation.array() < 0.0f).any() ||
+        (gridLocation.array() >= m_gridSize.array().cast<float>()).any())
+        return Eigen::Vector3f::Zero();
+
+    const Eigen::Vector3f forwardDiffDelta[3] = {Eigen::Vector3f(1, 0, 0),
+                                                 Eigen::Vector3f(0, 1, 0),
+                                                 Eigen::Vector3f(0, 0, 1)};
+
+    Eigen::Vector3f gradient(0, 0, 0);
+
+    gradient(0) = getDistance(gridLocation + forwardDiffDelta[0]) -
+                  getDistance(gridLocation - forwardDiffDelta[0]);
+    gradient(1) = getDistance(gridLocation + forwardDiffDelta[1]) -
+                  getDistance(gridLocation - forwardDiffDelta[1]);
+    gradient(2) = getDistance(gridLocation + forwardDiffDelta[2]) -
+                  getDistance(gridLocation - forwardDiffDelta[2]);
+
+    return gradient / (2 * m_voxelSize);
+}
