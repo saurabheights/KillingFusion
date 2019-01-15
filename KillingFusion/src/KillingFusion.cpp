@@ -50,7 +50,7 @@ void KillingFusion::process()
     curr2CanDisplacementField = prev2CanDisplacementField;
 
     // Compute Deformation Field for current frame SDF to merge with m_canonicalSdf
-    computeDisplacementField(currSdf, m_canonicalSdf, curr2CanDisplacementField);
+    // computeDisplacementField(currSdf, m_canonicalSdf, curr2CanDisplacementField);
 
     // Merge the m_currSdf to m_canonicalSdf using m_currSdf displacement field.
     m_canonicalSdf->fuse(currSdf, curr2CanDisplacementField);
@@ -60,7 +60,7 @@ void KillingFusion::process()
     prevSdf = currSdf;
     prev2CanDisplacementField = curr2CanDisplacementField;
   }
-  m_canonicalSdf->dumpToBinFile("outputDownSampled.bin",
+  m_canonicalSdf->dumpToBinFile("output.bin",
                                 DatasetReader::getTruncationDistanceInVoxelSize(), 1.0f);
 }
 

@@ -17,7 +17,7 @@ SDF::SDF(float _voxelSize,
 
     m_truncationDistanceInVoxelSize = truncationDistanceInVoxelSize;
 
-    computeVoxelGridSize();
+    computeVoxelGridSize(); // Sets m_totalNumberOfVoxels and m_gridSize
     m_gridSpacingPerAxis = Eigen::Vector3i(1, m_gridSize(0), m_gridSize(0) * m_gridSize(1));
     allocateMemoryForSDF();
 }
@@ -38,9 +38,9 @@ void SDF::computeVoxelGridSize()
 void SDF::allocateMemoryForSDF()
 {
     // Initialize voxel grid
-    int num_grid_elements = m_gridSize.prod();
-    m_voxelGridTSDF.resize(num_grid_elements);
-    m_voxelGridWeight.resize(num_grid_elements);
+    m_totalNumberOfVoxels = m_gridSize.prod();
+    m_voxelGridTSDF.resize(m_totalNumberOfVoxels);
+    m_voxelGridWeight.resize(m_totalNumberOfVoxels);
     // Set the distance to 1, since 1 represents each point is too far from the surface.
     // This is done for any voxel which had no correspondences in the image and thus was never processed.
     std::fill(m_voxelGridTSDF.begin(), m_voxelGridTSDF.end(), 1.0f);
@@ -140,7 +140,7 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
 
 void SDF::fuse(const SDF *otherSdf)
 {
-    for(size_t voxelIndex = 0; voxelIndex < m_gridSize.prod(); voxelIndex++)
+    for (size_t voxelIndex = 0; voxelIndex < m_totalNumberOfVoxels; voxelIndex++)
     {
         long w2 = otherSdf->m_voxelGridWeight.at(voxelIndex);
         // Ignore voxels that are at distance -1 behind the surface in otherSDF. No change needed.
@@ -163,7 +163,40 @@ void SDF::fuse(const SDF *otherSdf)
 
 void SDF::fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementField)
 {
+    for (int z = 0; z < m_gridSize(2); z++)
+    {
+        for (int y = 0; y < m_gridSize(1); y++)
+        {
+            for (int x = 0; x < m_gridSize(0); x++)
+            {
+                Eigen::Vector3f otherSdfIndex = Eigen::Vector3f(x + 0.5f, y + 0.5f, z + 0.5f) +
+                                                otherDisplacementField->getDisplacementAt(x, y, z);
+                // Tricky Part: We need to first get weight at otherSdfIndex.
+                float w2 = otherSdf->getWeight(otherSdfIndex);
+                // Ignore voxels that are at distance -1 behind the surface in otherSDF. No change needed.
+                // http://realtimecollisiondetection.net/blog/?p=89
+                if (fabs(w2) < 1e-5f) // Nearly Zero
+                {
+                    continue; // Make no change to this SDF.
+                }
 
+                long w1 = getWeightAtIndex(x, y, z);
+                float dist2 = otherSdf->getDistance(otherSdfIndex);
+                int voxelIndex = z * m_gridSpacingPerAxis(2) + y * m_gridSpacingPerAxis(1) + x;
+                if (w1 == 0)
+                {
+                    m_voxelGridTSDF.at(voxelIndex) = dist2;
+                    m_voxelGridWeight.at(voxelIndex) = w2;
+                }
+                else
+                {
+                    float dist1 = m_voxelGridTSDF.at(voxelIndex);
+                    m_voxelGridTSDF.at(voxelIndex) = (w1 * dist1 + w2 * dist2) / (w1 + w2);
+                    m_voxelGridWeight.at(voxelIndex) = (w1 + w2);
+                }
+            }
+        }
+    }
 }
 
 void SDF::dumpToBinFile(string outputFilePath,
@@ -178,12 +211,13 @@ void SDF::dumpToBinFile(string outputFilePath,
     outFile.write((char *) m_min3dLoc.data(), 3 * sizeof(float));
     outFile.write((char *) &m_voxelSize, sizeof(float));
     outFile.write((char *) &truncationDistanceInVoxelSizeUnit, sizeof(float));
-    outFile.write((char *)(&m_voxelGridTSDF[0]), m_gridSize.prod() * sizeof(float));
+    outFile.write((char *)(&m_voxelGridTSDF[0]), m_totalNumberOfVoxels * sizeof(float));
     outFile.close();
 
     float min = m_voxelGridTSDF[0];
     float max = m_voxelGridTSDF[0];
-    for (size_t i = 0; i < m_gridSize(0) * m_gridSize(1) * m_gridSize(2); i++) {
+    for (size_t i = 0; i < m_totalNumberOfVoxels; i++)
+    {
         if (m_voxelGridTSDF[i] < min)
             min = m_voxelGridTSDF[i];
         else if (m_voxelGridTSDF[i] > max)
@@ -203,7 +237,6 @@ float interpolate1D(float v_0, float v_1, float x)
 
 float interpolate2D(float v_00, float v_01, float v_10, float v_11, float x, float y)
 {
-
     float s = interpolate1D(v_00, v_01, x);
     float t = interpolate1D(v_10, v_11, x);
     return interpolate1D(s, t, y);
@@ -218,21 +251,64 @@ float interpolate3D(float v_000, float v_001, float v_010, float v_011,
     return interpolate1D(s, t, z);
 }
 
+bool SDF::indexInGridBounds(int x, int y, int z) const
+{
+    return x >= 0 && x < m_gridSize(0) &&
+           y >= 0 && y < m_gridSize(1) &&
+           z >= 0 && z < m_gridSize(2);
+}
+
+bool SDF::indexInGridBounds(const Eigen::Vector3i &gridSpatialIndex) const
+{
+    return ((gridSpatialIndex.array() >= 0).all() &&
+            (gridSpatialIndex.array() < m_gridSize.array()).all());
+}
+
 float SDF::getDistanceAtIndex(const Eigen::Vector3i &gridSpatialIndex) const
 {
+    if (!indexInGridBounds(gridSpatialIndex))
+    {
+        return -1;
+    }
     return m_voxelGridTSDF.at(gridSpatialIndex.dot(m_gridSpacingPerAxis));
+}
+
+float SDF::getDistanceAtIndex(int x, int y, int z) const
+{
+    if (!indexInGridBounds(x, y, z))
+    {
+        return -1;
+    }
+    return m_voxelGridTSDF.at(z * m_gridSpacingPerAxis(2) + y * m_gridSpacingPerAxis(1) + x);
+}
+
+long SDF::getWeightAtIndex(const Eigen::Vector3i &gridSpatialIndex) const
+{
+    if (!indexInGridBounds(gridSpatialIndex))
+    {
+        return 0;
+    }
+    return m_voxelGridWeight.at(gridSpatialIndex.dot(m_gridSpacingPerAxis));
+}
+
+long SDF::getWeightAtIndex(int x, int y, int z) const
+{
+    if (!indexInGridBounds(x, y, z))
+    {
+        return 0;
+    }
+    return m_voxelGridWeight.at(z * m_gridSpacingPerAxis(2) + y * m_gridSpacingPerAxis(1) + x);
 }
 
 float SDF::getDistance(const Eigen::Vector3f &gridLocation) const
 {
     // Substract 0.5f since, grid index (x,y,z) stores distance value for center (x,y,z)+(0.5,0.5,0.5)
     Eigen::Vector3f trueGridLocation = gridLocation.array() - 0.5f;
-    if ((gridLocation.array() < 0.0f).any() ||
-        (gridLocation.array() >= m_gridSize.array().cast<float>()).any())
-        return -1;
 
     // Interpolate in 3D array - https://stackoverflow.com/questions/19271568/trilinear-interpolation
     Eigen::Vector3i bottomLeftFrontIndex = trueGridLocation.cast<int>();
+
+    // ToDo - Compute indices yourself to make faster. Done as below to get implementation correct first.
     float vertex_000 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 0));
     float vertex_001 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 1));
     float vertex_010 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 0));
@@ -241,8 +317,30 @@ float SDF::getDistance(const Eigen::Vector3f &gridLocation) const
     float vertex_101 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 1));
     float vertex_110 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 0));
     float vertex_111 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 1));
-    Eigen::Vector3f weights = trueGridLocation - bottomLeftFrontIndex.cast<float>();
+    Eigen::Vector3f interpolationWeights = trueGridLocation - bottomLeftFrontIndex.cast<float>();
     return interpolate3D(vertex_000, vertex_001, vertex_010, vertex_011,
-                  vertex_100, vertex_101, vertex_110, vertex_111, 
-                  weights(0), weights(1), weights(2));
+                         vertex_100, vertex_101, vertex_110, vertex_111,
+                         interpolationWeights(0), interpolationWeights(1), interpolationWeights(2));
+}
+
+float SDF::getWeight(const Eigen::Vector3f &gridLocation) const
+{
+    // Substract 0.5f since, grid index (x,y,z) stores weight value for center (x,y,z)+(0.5,0.5,0.5)
+    Eigen::Vector3f trueGridLocation = gridLocation.array() - 0.5f;
+
+    // Interpolate in 3D array - https://stackoverflow.com/questions/19271568/trilinear-interpolation
+    Eigen::Vector3i bottomLeftFrontIndex = trueGridLocation.cast<int>();
+    // ToDo - Compute indices yourself to make faster. Done as below to get implementation correct first.
+    float vertex_000 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 0));
+    float vertex_001 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 1));
+    float vertex_010 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 0));
+    float vertex_011 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 1));
+    float vertex_100 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 0));
+    float vertex_101 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 1));
+    float vertex_110 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 0));
+    float vertex_111 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 1));
+    Eigen::Vector3f interpolationWeights = trueGridLocation - bottomLeftFrontIndex.cast<float>();
+    return interpolate3D(vertex_000, vertex_001, vertex_010, vertex_011,
+                         vertex_100, vertex_101, vertex_110, vertex_111,
+                         interpolationWeights(0), interpolationWeights(1), interpolationWeights(2));
 }

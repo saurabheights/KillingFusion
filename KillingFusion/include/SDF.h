@@ -16,6 +16,7 @@ class SDF
   Eigen::Vector3i m_gridSize;
   Eigen::Vector3f m_min3dLoc;
   Eigen::Vector3f m_max3dLoc;
+  int m_totalNumberOfVoxels;
   // ToDo - Change to vector of vector of vector.
   // Makes notation much simpler as well as reduces the computation of indices.
   std::vector<float> m_voxelGridTSDF;
@@ -54,29 +55,54 @@ public:
                            float maxDepth);
 
   /**
-   * Get value at spatial index. 
+   * Provides an easy way to check if an index(0-index) is within bound of the SDF grid.
+   */
+  bool indexInGridBounds(int x, int y, int z) const;
+  bool indexInGridBounds(const Eigen::Vector3i &gridSpatialIndex) const;
+
+  /**
+   * Get SDF distance value at spatial index(0-indexed).
    */
   float getDistanceAtIndex(const Eigen::Vector3i &gridSpatialIndex) const;
 
   /**
-   * Get value at grid location. 
+   * Get SDF distance value at spatial index(0-indexed).
+   */
+  float getDistanceAtIndex(int x, int y, int z) const;
+
+  /**
+   * Get SDF distance value at grid location. Grid Location unit is voxel size.
    */
   float getDistance(const Eigen::Vector3f &gridLocation) const;
 
   /**
+   * Get SDF weight value at spatial index.
+   */
+  long getWeightAtIndex(const Eigen::Vector3i &gridSpatialIndex) const;
+
+  /**
+   * Get SDF weight value at spatial index.
+   */
+  long getWeightAtIndex(int x, int y, int z) const;
+
+  /**
+   * Get SDF weight value at grid location. Grid Location unit is voxel size.
+   */
+  float getWeight(const Eigen::Vector3f &gridLocation) const;
+
+  /**
    * This function computes distance gradient at any index location.
-   * 
    */
   Eigen::Vector3f computeDistanceGradient(const Eigen::Vector3f &worldLocation) const;
 
   /**
    * Fuses otherSdf which should be of same size as this.
-   **/
+   */
   void fuse(const SDF *otherSdf);
 
   /**
    * Fuses otherSdf using its DisplacementField
-   **/
+   */
   void fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementField);
 
   /**

@@ -22,12 +22,19 @@ DisplacementField::~DisplacementField()
 
 Eigen::Vector3f DisplacementField::getDisplacementAt(const Eigen::Vector3i &spatialIndex) const
 {
-    // z * (m_gridSize(1) * m_gridSize(0)) + y * m_gridSize(0) + x
+    // ToDo - Implement boundary checking.
     return m_gridDisplacementValue.at(m_gridSpacingPerAxis.dot(spatialIndex));
+}
+
+Eigen::Vector3f DisplacementField::getDisplacementAt(int x, int y, int z) const
+{
+    // ToDo - Implement boundary checking.
+    return m_gridDisplacementValue.at(z * m_gridSpacingPerAxis(2) + y * m_gridSpacingPerAxis(1) + x);
 }
 
 void DisplacementField::update(Eigen::Vector3i spatialIndex, Eigen::Vector3f deltaUpdate)
 {
+    // ToDo - Implement boundary checking.
     int index = m_gridSpacingPerAxis.dot(spatialIndex);
     m_gridDisplacementValue.at(index) += deltaUpdate;
 }
