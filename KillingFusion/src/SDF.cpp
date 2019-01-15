@@ -28,11 +28,11 @@ SDF::~SDF()
 
 void SDF::computeVoxelGridSize()
 {
-    cout << "Bound is: " << m_bound.transpose() << "\n";
-    cout << "Voxel Size is: " << m_voxelSize << "\n";
+    // cout << "Bound is: " << m_bound.transpose() << "\n";
+    // cout << "Voxel Size is: " << m_voxelSize << "\n";
     // Casting may reduce size by 1.
     m_gridSize = ((m_bound / m_voxelSize)).cast<int>().array() + 1;
-    cout << "Grid Size computed is: " << m_gridSize.transpose() << "\n";
+    // cout << "Grid Size computed is: " << m_gridSize.transpose() << "\n";
 }
 
 void SDF::allocateMemoryForSDF()

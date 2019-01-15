@@ -40,6 +40,7 @@ add_definitions(-DDATA_DIR="${PROJECT_SOURCE_DIR}/data/")
 include_directories(${PROJECT_SOURCE_DIR}/include)
 set(HEADER_FILES
         include/config.h
+        include/Timer.h
         include/DatasetReader.h
         include/KillingFusion.h
         include/SDF.h

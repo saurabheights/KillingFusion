@@ -4,6 +4,7 @@
 
 #include "KillingFusion.h"
 #include "SDF.h"
+#include "Timer.h"
 using namespace std;
 
 KillingFusion::KillingFusion(DatasetReader datasetReader)
@@ -17,9 +18,9 @@ KillingFusion::KillingFusion(DatasetReader datasetReader)
   float maxDepth = m_datasetReader.getMaximumDepthThreshold();
   std::pair<Eigen::Vector3f, Eigen::Vector3f> frameBound = computeBounds(w, h, minDepth, maxDepth);
   m_canonicalSdf = new SDF(DatasetReader::getVoxelSize(),
-                     frameBound.first,
-                     frameBound.second,
-                     DatasetReader::getTruncationDistanceInVoxelSize());
+                           frameBound.first,
+                           frameBound.second,
+                           DatasetReader::getTruncationDistanceInVoxelSize());
 }
 
 KillingFusion::~KillingFusion()
@@ -40,32 +41,43 @@ void KillingFusion::process()
   m_canonicalSdf->fuse(prevSdf);
 
   // For each file in DatasetReader
+  Timer totalTimer, timer;
+  cout << "Iter   Compute SDF    KillingOptimize    Fuse SDF\n";
   for (int i = 1; i < m_datasetReader.getNumImageFiles(); ++i)
   {
     // Convert current frame to SDF - currSdf
+    timer.reset();
     SDF *currSdf = computeSDF(i);
+    double sdfTime = timer.elapsed();
 
     // Future Task - Implement SDF-2-SDF to register currSDF to prevSDF
     // Future Task - ToDo - DisplacementField should have same shape as their SDF.
     curr2CanDisplacementField = prev2CanDisplacementField;
 
     // Compute Deformation Field for current frame SDF to merge with m_canonicalSdf
-    // computeDisplacementField(currSdf, m_canonicalSdf, curr2CanDisplacementField);
+    timer.reset();
+    computeDisplacementField(currSdf, m_canonicalSdf, curr2CanDisplacementField);
+    double killingTime = timer.elapsed();
 
     // Merge the m_currSdf to m_canonicalSdf using m_currSdf displacement field.
+    timer.reset();
     m_canonicalSdf->fuse(currSdf, curr2CanDisplacementField);
+    double fuseTime = timer.elapsed();
 
     // Delete m_prevSdf and assign m_currSdf to m_prevSdf
     delete prevSdf;
     prevSdf = currSdf;
     prev2CanDisplacementField = curr2CanDisplacementField;
+    printf("%03d\t%0.6fs\t%0.6fs\t%0.6fs\n", i, sdfTime, killingTime, fuseTime);
   }
+  cout << "Total time spent " << totalTimer.elapsed() << endl;
   m_canonicalSdf->dumpToBinFile("output.bin",
                                 DatasetReader::getTruncationDistanceInVoxelSize(), 1.0f);
 }
 
 SDF *KillingFusion::computeSDF(int frameIndex)
 { // ToDo: SDF class should compute itself
+  // cout << "Computing SDF of frame " << frameIndex << endl;
   int w = m_datasetReader.getDepthWidth();
   int h = m_datasetReader.getDepthHeight();
   float minDepth = m_datasetReader.getMinimumDepthThreshold();

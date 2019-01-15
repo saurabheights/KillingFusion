@@ -132,10 +132,10 @@ cv::Mat DatasetReader::readDepthImage(std::string depthFilename)
 
   cv::Mat depthFloatImage(depthImage.size(), CV_32FC1);
   depthImage.convertTo(depthFloatImage, CV_32FC1, 1.0 / 1000); // ToDo:  Move depthShift to config.h
-  double minVal, maxVal;
-  cv::minMaxLoc(depthFloatImage, &minVal, &maxVal);
-  std::cout << "Depth Frame " << depthFilename.substr(depthFilename.size() - 7,3) << " has min, max value as : " << minVal << ", " << maxVal << '\n';
   return depthFloatImage;
+  // double minVal, maxVal;
+  // cv::minMaxLoc(depthFloatImage, &minVal, &maxVal);
+  // std::cout << "Depth Frame " << depthFilename.substr(depthFilename.size() - 7, 3) << " has minimum and maximum value as : " << minVal << ", " << maxVal << std::endl;
 }
 
 int DatasetReader::getDepthHeight()
