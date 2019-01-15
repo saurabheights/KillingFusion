@@ -145,19 +145,23 @@ void SDF::fuse(const SDF *otherSdf)
     {
         long w2 = otherSdf->m_voxelGridWeight.at(voxelIndex);
         // Ignore voxels that are at distance -1 behind the surface in otherSDF. No change needed.
-        if (w2 == 0) {
+        if (w2 == 0)
+        {
             continue;
         }
 
         long w1 = m_voxelGridWeight.at(voxelIndex);
         float dist2 = otherSdf->m_voxelGridTSDF.at(voxelIndex);
-        if (w1 == 0) {
+        if (w1 == 0)
+        {
             m_voxelGridTSDF.at(voxelIndex) = dist2;
             m_voxelGridWeight.at(voxelIndex) = w2;
-        } else {
+        }
+        else
+        {
             float dist1 = m_voxelGridTSDF.at(voxelIndex);
-            m_voxelGridTSDF.at(voxelIndex) = (w1 * dist1 + w2 * dist2) / (w1+w2);
-            m_voxelGridWeight.at(voxelIndex) = (w1+w2);
+            m_voxelGridTSDF.at(voxelIndex) = (w1 * dist1 + w2 * dist2) / (w1 + w2);
+            m_voxelGridWeight.at(voxelIndex) = (w1 + w2);
         }
     }
 }
@@ -209,10 +213,10 @@ void SDF::dumpToBinFile(string outputFilePath,
     cout << "============================================================================\n";
     cout << "Saving TSDF voxel grid values at " << outputFilePath << "\n";
     ofstream outFile(outputFilePath, ios::binary | ios::out);
-    outFile.write((char *) m_gridSize.data(), 3 * sizeof(int));
-    outFile.write((char *) m_min3dLoc.data(), 3 * sizeof(float));
-    outFile.write((char *) &m_voxelSize, sizeof(float));
-    outFile.write((char *) &truncationDistanceInVoxelSizeUnit, sizeof(float));
+    outFile.write((char *)m_gridSize.data(), 3 * sizeof(int));
+    outFile.write((char *)m_min3dLoc.data(), 3 * sizeof(float));
+    outFile.write((char *)&m_voxelSize, sizeof(float));
+    outFile.write((char *)&truncationDistanceInVoxelSizeUnit, sizeof(float));
     outFile.write((char *)(&m_voxelGridTSDF[0]), m_totalNumberOfVoxels * sizeof(float));
     outFile.close();
 
