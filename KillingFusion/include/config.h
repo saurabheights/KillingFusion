@@ -34,6 +34,12 @@ extern float datasetDepthMinMaxValues[2][2];
  * Killing Fusion Pipeline configuration
  */
 
+// learning rates for gradient descent
+extern float alpha;
+
+// Convergence criterion - Stop when gradient < threshold  
+extern float threshold;
+
 // Killing condition weights 
 extern float omegaKilling;
 

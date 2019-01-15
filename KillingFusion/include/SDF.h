@@ -30,6 +30,7 @@ class SDF
   void allocateMemoryForSDF();
 
 public:
+  // ToDo: Remove use of truncationDistanceInVoxelSize and add a method getTruncatedDistance.
   SDF(float _voxelSize,
       Eigen::Vector3f _min3dLoc,
       Eigen::Vector3f _max3dLoc,

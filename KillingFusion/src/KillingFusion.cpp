@@ -114,6 +114,7 @@ void KillingFusion::computeDisplacementField(const SDF *src,
   Eigen::Vector3i srcGridSize = src->getGridSize();
 
   // Compute gradient of src voxel displacement to move it toward destination voxel
+
 #pragma omp parallel for schedule(dynamic)
   for (int z = 0; z < srcGridSize(2); z++)
   {
@@ -121,6 +122,27 @@ void KillingFusion::computeDisplacementField(const SDF *src,
     {
       for (int x = 0; x < srcGridSize(0); x++)
       {
+        // Actual 3D Point on Desination Grid, where to optimize for.
+        Eigen::Vector3i spatialIndex(x, y, z);
+        Eigen::Vector3f p = (spatialIndex.array().cast<float>() + 0.5f) * getVoxelSize();
+
+        // Optimize Killing Energy between Source Grid and Desination Grid
+        Eigen::Vector3f gradient;
+        do
+        {
+          gradient = computeEnergyGradient(src, dest, srcToDest, spatialIndex, p);
+          srcToDest->update(spatialIndex, -alpha * gradient);
+
+          if (gradient.norm() <= threshold)
+            break;
+
+          // perform check on deformation field to see if it has diverged. Ideally shouldn't happen
+          if (!srcToDest->getDisplacementAt(spatialIndex).array().isFinite().all())
+          {
+            std::cout << "Error: deformation field has diverged: " << srcToDest->getDisplacementAt(spatialIndex) << " at: " << p << std::endl;
+            throw - 1;
+          }
+        } while(gradient.norm() > threshold); // ToDo: Need to reduce threshold Currently runs too long.
       }
     }
   }
