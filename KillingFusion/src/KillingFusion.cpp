@@ -188,10 +188,10 @@ Eigen::Vector3f KillingFusion::computeDataEnergyGradient(const SDF *src,
   // Compute first distance gradient. How the distance changes at a given location p
   Eigen::Vector3f displacedLocation = srcDisplacementField->getDisplacementAt(spatialIndex);
   Eigen::Vector3f srcGridLocation = p + displacedLocation;
-  Eigen::Vector3f srcDistanceGradient = src->computeDistanceGradient(srcGridLocation);
+  Eigen::Vector3f srcPointDistanceGradient = src->computeDistanceGradient(srcGridLocation);
   float srcPointDistance = src->getDistance(srcGridLocation);
   float destPointDistance = dest->getDistanceAtIndex(spatialIndex);
-  return (srcPointDistance - destPointDistance) * srcDistanceGradient.array();
+  return (srcPointDistance - destPointDistance) * srcPointDistanceGradient.array();
 }
 
 Eigen::Vector3f KillingFusion::computeKillingEnergyGradient(const SDF *src,
@@ -207,7 +207,16 @@ Eigen::Vector3f KillingFusion::computeLevelSetEnergyGradient(const SDF *src,
                                                              const Eigen::Vector3i &spatialIndex,
                                                              const Eigen::Vector3f &p)
 {
-  return Eigen::Vector3f::Zero();
+  Eigen::Vector3f displacedLocation = srcDisplacementField->getDisplacementAt(spatialIndex);
+  Eigen::Vector3f srcGridLocation = p + displacedLocation;
+
+  // Compute first distance gradient.and hessian
+  Eigen::Vector3f grad = src->computeDistanceGradient(srcGridLocation);
+
+  // Compute Hessian
+  Eigen::Matrix3f hessian = src->computeDistanceHessian(srcGridLocation);
+
+  return hessian * grad * (grad.norm() - 1) / (grad.norm() + epsilon);
 }
 
 std::pair<Eigen::Vector3f, Eigen::Vector3f> KillingFusion::computeBounds(int w, int h, float minDepth, float maxDepth)

@@ -92,9 +92,14 @@ public:
   float getWeight(const Eigen::Vector3f &gridLocation) const;
 
   /**
-   * This function computes distance gradient at any index location.
+   * This function computes distance gradient at any grid location. Grid Location unit is voxel size.
    */
-  Eigen::Vector3f computeDistanceGradient(const Eigen::Vector3f &worldLocation) const;
+  Eigen::Vector3f computeDistanceGradient(const Eigen::Vector3f &gridLocation) const;
+  
+  /**
+   * This function computes distance hessian at any grid location. Grid Location unit is voxel size.
+   */
+  Eigen::Matrix3f computeDistanceHessian(const Eigen::Vector3f &gridLocation) const;
 
   /**
    * Fuses otherSdf which should be of same size as this.

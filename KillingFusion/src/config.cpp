@@ -27,3 +27,6 @@ float threshold = 0.1f;
 float alpha = 0.1f;
 float omegaKilling = 0.5f;
 float omegaLevelSet = 0.2f;
+
+// Level-set - Prevents division by zero
+float epsilon = 0.00001f;
