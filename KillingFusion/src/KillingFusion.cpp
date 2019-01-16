@@ -129,7 +129,7 @@ void KillingFusion::computeDisplacementField(const SDF *src,
       {
         // Actual 3D Point on Desination Grid, where to optimize for.
         Eigen::Vector3i spatialIndex(x, y, z);
-        Eigen::Vector3f p = (spatialIndex.array().cast<float>() + 0.5f) * getVoxelSize();
+        Eigen::Vector3f p = (spatialIndex.array().cast<float>() + 0.5f);
 
         // ToDo - Use True SDF and do not optimize over voxels at distance 2 * voxelsize from surface.
         // Currently, hacking this using truncationDistanceInVoxelSize, where truncationDistanceInVoxelSize >=2.
@@ -145,6 +145,7 @@ void KillingFusion::computeDisplacementField(const SDF *src,
 
         // Optimize Killing Energy between Source Grid and Desination Grid
         Eigen::Vector3f gradient;
+        int iter = 0;
         do
         {
           gradient = computeEnergyGradient(src, dest, srcToDest, spatialIndex, p);
@@ -159,7 +160,9 @@ void KillingFusion::computeDisplacementField(const SDF *src,
             std::cout << "Error: deformation field has diverged: " << srcToDest->getDisplacementAt(spatialIndex) << " at: " << p << std::endl;
             throw - 1;
           }
-        } while(gradient.norm() > threshold); // ToDo: Need to reduce threshold Currently runs too long.
+
+          iter+=1;
+        } while (gradient.norm() > threshold && iter < KILLING_MAX_ITERATIONS);
       }
     }
   }

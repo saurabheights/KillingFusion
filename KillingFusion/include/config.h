@@ -33,6 +33,7 @@ extern float datasetDepthMinMaxValues[2][2];
 /**
  * Killing Fusion Pipeline configuration
  */
+extern int KILLING_MAX_ITERATIONS;
 
 // learning rates for gradient descent
 extern float alpha;

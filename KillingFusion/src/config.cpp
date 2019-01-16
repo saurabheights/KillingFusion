@@ -21,6 +21,7 @@ float datasetDepthMinMaxValues[2][2] = {
  * of 8 mm for human-sized subjects and 4 mm for smaller-scale ones.
 
  */
+int KILLING_MAX_ITERATIONS = 32;
 float threshold = 0.1f;
 
 float alpha = 0.1f;
