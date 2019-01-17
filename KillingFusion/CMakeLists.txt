@@ -53,6 +53,9 @@ set(SOURCE_FILES
         src/SDF.cpp
         src/DisplacementField.cpp)
 
+# To Check if in debug mode. Disables OpenMP
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DMY_DEBUG")
+
 ## Targets
 add_executable(KillingFusion ${HEADER_FILES} ${SOURCE_FILES})
 target_link_libraries(KillingFusion PRIVATE OpenMP::OpenMP_CXX ${OpenCV_LIBS})

@@ -140,7 +140,9 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
 
 void SDF::fuse(const SDF *otherSdf)
 {
+#ifndef MY_DEBUG
 #pragma omp parallel for
+#endif
     for (size_t voxelIndex = 0; voxelIndex < m_totalNumberOfVoxels; voxelIndex++)
     {
         long w2 = otherSdf->m_voxelGridWeight.at(voxelIndex);

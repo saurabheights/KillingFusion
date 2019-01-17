@@ -119,8 +119,9 @@ void KillingFusion::computeDisplacementField(const SDF *src,
 
   // Compute gradient of src voxel displacement to move it toward destination voxel
   const float truncationDistanceInVoxelSize = DatasetReader::getTruncationDistanceInVoxelSize();
-
+#ifndef MY_DEBUG
 #pragma omp parallel for schedule(dynamic)
+#endif
   for (int z = 0; z < srcGridSize(2); z++)
   {
     for (int y = 0; y < srcGridSize(1); y++)
