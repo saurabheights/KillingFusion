@@ -38,10 +38,6 @@ public:
 
   float getMinimumDepthThreshold() { return m_minMaxDepth.first; }
   float getMaximumDepthThreshold() { return m_minMaxDepth.second; }
-
-  // Hard Coded values
-  static float getVoxelSize() { return 0.02; }
-  static float getTruncationDistanceInVoxelSize() { return 3.0; }
 };
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_DATASETREADER_H

@@ -17,10 +17,10 @@ KillingFusion::KillingFusion(DatasetReader datasetReader)
   float minDepth = m_datasetReader.getMinimumDepthThreshold();
   float maxDepth = m_datasetReader.getMaximumDepthThreshold();
   std::pair<Eigen::Vector3f, Eigen::Vector3f> frameBound = computeBounds(w, h, minDepth, maxDepth);
-  m_canonicalSdf = new SDF(DatasetReader::getVoxelSize(),
+  m_canonicalSdf = new SDF(VoxelSize,
                            frameBound.first,
                            frameBound.second,
-                           DatasetReader::getTruncationDistanceInVoxelSize());
+                           UnknownClipDistance);
 }
 
 KillingFusion::~KillingFusion()
@@ -72,7 +72,7 @@ void KillingFusion::process()
   }
   cout << "Total time spent " << totalTimer.elapsed() << endl;
   m_canonicalSdf->dumpToBinFile("output.bin",
-                                DatasetReader::getTruncationDistanceInVoxelSize(), 1.0f);
+                                UnknownClipDistance, 1.0f);
 }
 
 SDF *KillingFusion::computeSDF(int frameIndex)
@@ -87,10 +87,10 @@ SDF *KillingFusion::computeSDF(int frameIndex)
   float minDepth = m_datasetReader.getMinimumDepthThreshold();
   float maxDepth = m_datasetReader.getMaximumDepthThreshold();
   std::pair<Eigen::Vector3f, Eigen::Vector3f> frameBound = computeBounds(w, h, minDepth, maxDepth);
-  SDF *sdf = new SDF(DatasetReader::getVoxelSize(),
+  SDF *sdf = new SDF(VoxelSize,
                      frameBound.first,
                      frameBound.second,
-                     DatasetReader::getTruncationDistanceInVoxelSize());
+                     UnknownClipDistance);
   std::vector<cv::Mat> cdoImages = m_datasetReader.getImages(frameIndex);
   sdf->integrateDepthFrame(cdoImages.at(1),
                            cdoImages.at(2),
@@ -104,9 +104,7 @@ SDF *KillingFusion::computeSDF(int frameIndex)
 DisplacementField *KillingFusion::createZeroDisplacementField(const SDF &sdf)
 {
   return new DisplacementField(sdf.getGridSize(),
-                               DatasetReader::getVoxelSize(),
-                               sdf.getMin3dLoc(),
-                               sdf.getMax3dLoc());
+                               VoxelSize);
 }
 
 void KillingFusion::computeDisplacementField(const SDF *src,
@@ -118,7 +116,6 @@ void KillingFusion::computeDisplacementField(const SDF *src,
   Eigen::Vector3i srcGridSize = src->getGridSize();
 
   // Compute gradient of src voxel displacement to move it toward destination voxel
-  const float truncationDistanceInVoxelSize = DatasetReader::getTruncationDistanceInVoxelSize();
 #ifndef MY_DEBUG
 #pragma omp parallel for schedule(dynamic)
 #endif
@@ -138,8 +135,8 @@ void KillingFusion::computeDisplacementField(const SDF *src,
         Eigen::Vector3f srcGridLocation = p + displacedLocation;
         float srcSdfTruncatedDistance = src->getDistance(srcGridLocation);
         float destSdfTruncatedDistance = dest->getDistance(p);
-        if (fabs(srcSdfTruncatedDistance) >= 2 / truncationDistanceInVoxelSize &&
-            fabs(destSdfTruncatedDistance) >= 2 / truncationDistanceInVoxelSize)
+        if (fabs(srcSdfTruncatedDistance) > MaxSurfaceVoxelDistance ||
+            fabs(srcSdfTruncatedDistance) < -UnknownClipDistance)
         {
           continue;
         }

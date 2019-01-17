@@ -58,10 +58,6 @@ public:
   KillingFusion(DatasetReader datasetReader);
   ~KillingFusion();
   void process();
-  float getVoxelSize() const
-  {
-    return DatasetReader::getVoxelSize();
-  }
 };
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_FUSION_H

@@ -8,18 +8,46 @@ using namespace std;
 SDF::SDF(float _voxelSize,
          Eigen::Vector3f _min3dLoc,
          Eigen::Vector3f _max3dLoc,
-         float truncationDistanceInVoxelSize)
+         float unknownClipDistance)
     : m_voxelSize{_voxelSize},
       m_bound{_max3dLoc - _min3dLoc}
 {
     m_min3dLoc = _min3dLoc;
     m_max3dLoc = _max3dLoc;
 
-    m_truncationDistanceInVoxelSize = truncationDistanceInVoxelSize;
+    m_unknownClipDistance = unknownClipDistance;
 
     computeVoxelGridSize(); // Sets m_totalNumberOfVoxels and m_gridSize
     m_gridSpacingPerAxis = Eigen::Vector3i(1, m_gridSize(0), m_gridSize(0) * m_gridSize(1));
+    m_totalNumberOfVoxels = m_gridSize.prod();
     allocateMemoryForSDF();
+}
+
+SDF::SDF(const SDF &copy) noexcept
+{
+    m_voxelSize = copy.m_voxelSize;
+    m_bound = copy.m_bound;
+    m_min3dLoc = copy.m_min3dLoc;
+    m_max3dLoc = copy.m_max3dLoc;
+    m_unknownClipDistance = copy.m_unknownClipDistance;
+    m_gridSize = copy.m_gridSize;
+    m_gridSpacingPerAxis = Eigen::Vector3i(1, m_gridSize(0), m_gridSize(0) * m_gridSize(1));
+    m_totalNumberOfVoxels = m_gridSize.prod();
+    allocateMemoryForSDF();
+}
+
+SDF::SDF(SDF &&other) noexcept
+    : m_voxelGridTSDF(std::move(other.m_voxelGridTSDF)),
+      m_voxelGridWeight(std::move(other.m_voxelGridWeight))
+{
+    m_voxelSize = other.m_voxelSize;
+    m_bound = other.m_bound;
+    m_min3dLoc = other.m_min3dLoc;
+    m_max3dLoc = other.m_max3dLoc;
+    m_unknownClipDistance = other.m_unknownClipDistance;
+    m_gridSize = other.m_gridSize;
+    m_gridSpacingPerAxis = Eigen::Vector3i(1, m_gridSize(0), m_gridSize(0) * m_gridSize(1));
+    m_totalNumberOfVoxels = m_gridSize.prod();
 }
 
 SDF::~SDF()
@@ -38,7 +66,6 @@ void SDF::computeVoxelGridSize()
 void SDF::allocateMemoryForSDF()
 {
     // Initialize voxel grid
-    m_totalNumberOfVoxels = m_gridSize.prod();
     m_voxelGridTSDF.resize(m_totalNumberOfVoxels);
     m_voxelGridWeight.resize(m_totalNumberOfVoxels);
     // Set the distance to 1, since 1 represents each point is too far from the surface.
@@ -64,15 +91,14 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
     cout << "Lower bound of Voxels to loop over: \n" << minLocIndex.transpose() << "\n";
     cout << "Upper bound of Voxels to loop over: \n" << maxLocIndex.transpose() << "\n";
 #endif
-
-    float truncationDistance = m_truncationDistanceInVoxelSize * m_voxelSize;
-
-    // ToDo - Add truncated number of voxels to SDF
-    for (int z = 0; z < m_gridSize(2); z++) {
+    for (int z = 0; z < m_gridSize(2); z++)
+    {
         float Z = m_voxelSize * (z + 0.5f) + m_min3dLoc(2);
-        for (int y = 0; y < m_gridSize(1); y++) {
+        for (int y = 0; y < m_gridSize(1); y++)
+        {
             float Y = m_voxelSize * (y + 0.5f) + m_min3dLoc(1);
-            for (int x = 0; x < m_gridSize(0); x++) {
+            for (int x = 0; x < m_gridSize(0); x++)
+            {
                 float X = m_voxelSize * (x + 0.5f) + m_min3dLoc(0);
 #ifdef DEBUG
                     cout << "Voxel Center location in grid voxelsize is : " << x << ", " << y << ", " << z << "\n";
@@ -82,9 +108,8 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
                 // Backproject it to the depth image
                 Eigen::Vector4f voxelCenter(X, Y, Z, 1);
                 Eigen::Vector4f voxelCenterInCamera = world_to_camera_pose * voxelCenter;
-                Eigen::Vector3f
-                    voxelPixelLocation(voxelCenterInCamera(0)/voxelCenterInCamera(2),
-                        voxelCenterInCamera(1)/voxelCenterInCamera(2), 1);
+                Eigen::Vector3f voxelPixelLocation(voxelCenterInCamera(0) / voxelCenterInCamera(2),
+                                                   voxelCenterInCamera(1) / voxelCenterInCamera(2), 1);
                 voxelPixelLocation = depthIntrinsicMatrix * voxelPixelLocation;
                 
 #ifdef DEBUG
@@ -109,28 +134,25 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
                     continue;
 
                 uchar isForegroundPixel = maskFrame.at<uchar>(row, col);
-                if ( isForegroundPixel == 0)
+                if (isForegroundPixel == 0)
                     continue;
 
                 // If depth image is valid at the pixel
                 float voxelCenterDepth = voxelCenterInCamera(2);
                 float depth = depthFrame.at<float>(row, col);
-                if (depth < minDepth || depth > maxDepth) // ToDo: Is clipping between 0.4 to 4 ok
+                if (depth < minDepth || depth > maxDepth)
                     continue;
 
-                float diff = depth - voxelCenterDepth;
+                float dist = depth - voxelCenterDepth;
 
-                // Check if diff is too negative: truncate_margin
-                if (diff < -truncationDistance) // Ignore any voxel at certain threshold behind the surface.
+                // Check if diff is too negative: m_unknownClipDistance
+                if (dist < -m_unknownClipDistance) // Ignore any voxel at certain threshold behind the surface.
                     continue;
-
-                // Compute normalized signed distance - from -1 to 1.
-                float dist = fmin(1.0f, diff / truncationDistance);
 
                 // Merge the signed distance in this voxel
-                int index = z * (m_gridSize(1) * m_gridSize(0)) + y * m_gridSize(0) + x;
+                int index = z * m_gridSpacingPerAxis(2) + y * m_gridSpacingPerAxis(1) + x;
                 m_voxelGridTSDF.at(index) =
-                    (m_voxelGridTSDF.at(index) * m_voxelGridWeight.at(index) + dist) / 
+                    (m_voxelGridTSDF.at(index) * m_voxelGridWeight.at(index) + dist) /
                     (m_voxelGridWeight.at(index) + 1);
                 m_voxelGridWeight.at(index) += 1;
             }
@@ -209,7 +231,7 @@ void SDF::fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementFi
 
 void SDF::dumpToBinFile(string outputFilePath,
                         float truncationDistanceInVoxelSizeUnit,
-                        float minimumWeightThreshold)
+                        float minimumWeightThreshold) const
 {
     // Save TSDF voxel grid and its parameters to disk as binary file (float array)
     cout << "============================================================================\n";

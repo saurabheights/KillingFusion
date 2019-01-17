@@ -24,7 +24,7 @@ class SDF
   float m_voxelSize;
   Eigen::Vector3i m_gridSpacingPerAxis;
   Eigen::Vector3f m_bound;
-  float m_truncationDistanceInVoxelSize;
+  float m_unknownClipDistance;
 
   void computeVoxelGridSize();
   void allocateMemoryForSDF();
@@ -34,7 +34,12 @@ public:
   SDF(float _voxelSize,
       Eigen::Vector3f _min3dLoc,
       Eigen::Vector3f _max3dLoc,
-      float truncationDistanceInVoxelSize);
+      float unknownClipDistance);
+
+  // Creates a new SDF of same size as copy. Voxel weight and distance is not copied.
+  SDF(const SDF& copy) noexcept;
+
+  SDF(SDF&& f) noexcept;
 
   ~SDF();
 
@@ -95,7 +100,7 @@ public:
    * This function computes distance gradient at any grid location. Grid Location unit is voxel size.
    */
   Eigen::Vector3f computeDistanceGradient(const Eigen::Vector3f &gridLocation) const;
-  
+
   /**
    * This function computes distance hessian at any grid location. Grid Location unit is voxel size.
    */
@@ -117,7 +122,7 @@ public:
    */
   void dumpToBinFile(std::string outputFilePath,
                      float truncationDistanceInVoxelSizeUnit,
-                     float minimumWeightThreshold);
+                     float minimumWeightThreshold) const;
 
   /**
    * Getters

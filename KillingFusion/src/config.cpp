@@ -1,5 +1,11 @@
 #include <config.h>
 
+// SDF Generation Parameters
+float VoxelSize = 0.01f;
+float UnknownClipDistance = VoxelSize * 2;
+float MaxSurfaceVoxelDistance = VoxelSize * 4;
+
+// Dataset and Pipeline to Use
 const FusionTechnique fusionTechnique = KILLING_FUSION;
 
 int numImageFiles[2] = {447, 630};

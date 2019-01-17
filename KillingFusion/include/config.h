@@ -7,6 +7,12 @@
 
 #include <string>
 
+// SDF Generation Parameters
+extern float VoxelSize;
+extern float UnknownClipDistance;
+extern float MaxSurfaceVoxelDistance;
+// Dataset and Pipeline to Use
+
 // ToDo: later add another layer of VariationalFusion between main and KillingFusion class and further
 // add the Solobev Fusion.
 enum FusionTechnique
@@ -46,4 +52,7 @@ extern float omegaKilling;
 
 // Level-set condition weights
 extern float omegaLevelSet;
+// Level-set - Prevents division by zero
+extern float epsilon;
+
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_CONFIG_H

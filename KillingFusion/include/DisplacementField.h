@@ -14,15 +14,11 @@ private:
   Eigen::Vector3i m_gridSize;
   Eigen::Vector3i m_gridSpacingPerAxis; // See update function to see how this is used.
   Eigen::Vector3f m_bound;
-  Eigen::Vector3f m_min3dLoc;
-  Eigen::Vector3f m_max3dLoc;
 
 public:
   DisplacementField() = delete;
   DisplacementField(Eigen::Vector3i gridSize,
-                    float _voxelSize,
-                    Eigen::Vector3f _min3dLoc,
-                    Eigen::Vector3f _max3dLoc);
+                    float _voxelSize);
   ~DisplacementField();
 
   Eigen::Vector3f getDisplacementAt(const Eigen::Vector3i &spatialIndex) const;
