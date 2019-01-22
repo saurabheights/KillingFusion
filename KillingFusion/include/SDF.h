@@ -43,6 +43,9 @@ public:
 
   ~SDF();
 
+  static std::vector<SDF> getDataEnergyTestSample(float _voxelSize,
+                                                  float unknownClipDistance);
+
   /**
      * Main function to merge depth frames into the SDF volume.
      * The method can be called multiple times but need to be initialized with volume bounds beforehand.

@@ -54,6 +54,60 @@ SDF::~SDF()
 {
 }
 
+// ToDo - Add generateSphere method. Make it more generic.
+vector<SDF> SDF::getDataEnergyTestSample(float _voxelSize,
+                                         float unknownClipDistance)
+{
+    Eigen::Vector3f _min3dLoc = Eigen::Vector3f::Zero();
+    Eigen::Vector3f _max3dLoc = Eigen::Vector3f::Zero().array() + _voxelSize * 9;
+    SDF canSdf(_voxelSize, _min3dLoc, _max3dLoc, unknownClipDistance);
+    SDF nextSdf(_voxelSize, _min3dLoc, _max3dLoc, unknownClipDistance);
+
+    // Build Sphere with different center
+    Eigen::Vector3f canSdfSphereCenter = (canSdf.m_gridSize / 2).cast<float>() + Eigen::Vector3f(0.5,0.5,-0.5);
+    cout << "Center for First Sphere is " << canSdfSphereCenter.transpose() << endl;
+    Eigen::Vector3f nextSdfSphereCenter = (canSdf.m_gridSize / 2).cast<float>() + Eigen::Vector3f(0.5,0.5,0.5);
+    cout << "Center for Second Sphere is " << nextSdfSphereCenter.transpose() << endl;
+    float radius = 3 * canSdf.m_voxelSize;
+    for (int z = 0; z < canSdf.m_gridSize(2); z++)
+    {
+        for (int y = 0; y < canSdf.m_gridSize(1); y++)
+        {
+            for (int x = 0; x < canSdf.m_gridSize(0); x++)
+            {
+                Eigen::Vector3f voxelLocation = Eigen::Vector3f(x + 0.5f, y + 0.5f, z + 0.5f);
+                int voxelIndex = z * canSdf.m_gridSpacingPerAxis(2) + y * canSdf.m_gridSpacingPerAxis(1) + x;
+                float canSdfDistance = (canSdfSphereCenter - voxelLocation).norm() * _voxelSize - radius;
+                float nextSdfDistance = (nextSdfSphereCenter - voxelLocation).norm() * _voxelSize - radius;
+                if (canSdfDistance >= -unknownClipDistance)
+                {
+                    canSdf.m_voxelGridTSDF.at(voxelIndex) = canSdfDistance;
+                    canSdf.m_voxelGridWeight.at(voxelIndex) = 1;
+                }
+                else
+                {
+                    canSdf.m_voxelGridWeight.at(voxelIndex) = 0;
+                }
+
+                if (nextSdfDistance >= -unknownClipDistance)
+                {
+                    nextSdf.m_voxelGridTSDF.at(voxelIndex) = nextSdfDistance;
+                    nextSdf.m_voxelGridWeight.at(voxelIndex) = 1;
+                }
+                else
+                {
+                    nextSdf.m_voxelGridWeight.at(voxelIndex) = 0;
+                }
+            }
+        }
+    }
+
+    std::vector<SDF> sdfs;
+    sdfs.push_back(std::move(canSdf));
+    sdfs.push_back(std::move(nextSdf));
+    return sdfs;
+}
+
 void SDF::computeVoxelGridSize()
 {
     // cout << "Bound is: " << m_bound.transpose() << "\n";
