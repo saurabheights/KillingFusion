@@ -80,6 +80,38 @@ void KillingFusion::process()
                                 UnknownClipDistance, 1.0f);
 }
 
+void KillingFusion::processTest(int testType)
+{
+  // Set prevSdf to SDF of first frame
+  vector<SDF> adjacentVoxelSDFs = SDF::getDataEnergyTestSample(VoxelSize, UnknownClipDistance);
+  DisplacementField *next2CanDisplacementField = createZeroDisplacementField(adjacentVoxelSDFs[1]);
+  if (testType == 1)
+  { // Test if fuse works when merging one SDF to itself
+    adjacentVoxelSDFs[0].dumpToBinFile("testType-1-outputSphere0.bin", UnknownClipDistance, 1.0f);
+    adjacentVoxelSDFs[1].dumpToBinFile("testType-1-outputSphere1.bin", UnknownClipDistance, 1.0f);
+    adjacentVoxelSDFs[0].fuse(&(adjacentVoxelSDFs[0]));
+    adjacentVoxelSDFs[0].dumpToBinFile("testType-1-outputSphere0MergedTo0.bin", UnknownClipDistance, 1.0f);
+  }
+  else if (testType == 2)
+  { // Test if fuse works when merging one SDF to another
+    adjacentVoxelSDFs[0].dumpToBinFile("testType-1-outputSphere0.bin", UnknownClipDistance, 1.0f);
+    adjacentVoxelSDFs[1].dumpToBinFile("testType-1-outputSphere1.bin", UnknownClipDistance, 1.0f);
+    adjacentVoxelSDFs[0].fuse(&(adjacentVoxelSDFs[1]));
+    adjacentVoxelSDFs[0].dumpToBinFile("testType-1-outputSphere1MergedTo0.bin", UnknownClipDistance, 1.0f);
+  }
+  else
+  {
+    computeDisplacementField(&(adjacentVoxelSDFs[1]), &(adjacentVoxelSDFs[0]), next2CanDisplacementField);
+    adjacentVoxelSDFs[0].fuse(&(adjacentVoxelSDFs[1]), next2CanDisplacementField);
+    SDF srcCopy(adjacentVoxelSDFs[1]);
+    srcCopy.fuse(&(adjacentVoxelSDFs[1]), next2CanDisplacementField);
+    srcCopy.dumpToBinFile("testType-2-outputSphere1Deformed.bin", UnknownClipDistance, 1.0f);
+    adjacentVoxelSDFs[0].dumpToBinFile("testType-2-outputSphere1MergedTo0UsingKilling.bin", UnknownClipDistance, 1.0f);
+  }
+
+  delete next2CanDisplacementField;
+}
+
 SDF *KillingFusion::computeSDF(int frameIndex)
 {
   // ToDo: SDF class should compute itself

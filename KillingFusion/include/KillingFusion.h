@@ -58,6 +58,7 @@ public:
   KillingFusion(DatasetReader datasetReader);
   ~KillingFusion();
   void process();
+  void processTest(int testType);
 };
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_FUSION_H
