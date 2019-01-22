@@ -32,18 +32,23 @@ KillingFusion::~KillingFusion()
 
 void KillingFusion::process()
 {
-  DisplacementField *prev2CanDisplacementField;
-  DisplacementField *curr2CanDisplacementField;
+  // Set the sequence of image to process
+  int startFrame = 0;
+  int endFrame = m_datasetReader.getNumImageFiles();
+
+  // Displacement Field for the previous and current frame.
+  DisplacementField *prev2CanDisplacementField, *curr2CanDisplacementField;
 
   // Set prevSdf to SDF of first frame
-  const SDF *prevSdf = computeSDF(0);
+  const SDF *prevSdf = computeSDF(startFrame);
   prev2CanDisplacementField = createZeroDisplacementField(*prevSdf);
   m_canonicalSdf->fuse(prevSdf);
 
   // For each file in DatasetReader
   Timer totalTimer, timer;
   cout << "Iter   Compute SDF    KillingOptimize    Fuse SDF\n";
-  for (int i = 1; i < m_datasetReader.getNumImageFiles(); ++i)
+  // For each image file from DatasetReader
+  for (int i = startFrame+1; i < endFrame; ++i)
   {
     // Convert current frame to SDF - currSdf
     timer.reset();
