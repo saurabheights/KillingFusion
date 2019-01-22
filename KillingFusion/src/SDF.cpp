@@ -340,12 +340,12 @@ float SDF::getDistance(const Eigen::Vector3f &gridLocation) const
 
     // ToDo - Compute indices yourself to make faster. Done as below to get implementation correct first.
     float vertex_000 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 0));
-    float vertex_001 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 1));
+    float vertex_001 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 0));
     float vertex_010 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 0));
-    float vertex_011 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 1));
-    float vertex_100 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 0));
+    float vertex_011 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 0));
+    float vertex_100 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 1));
     float vertex_101 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 1));
-    float vertex_110 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 0));
+    float vertex_110 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 1));
     float vertex_111 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 1));
     Eigen::Vector3f interpolationWeights = trueGridLocation - bottomLeftFrontIndex.cast<float>();
     return interpolate3D(vertex_000, vertex_001, vertex_010, vertex_011,
@@ -362,12 +362,12 @@ float SDF::getWeight(const Eigen::Vector3f &gridLocation) const
     Eigen::Vector3i bottomLeftFrontIndex = trueGridLocation.cast<int>();
     // ToDo - Compute indices yourself to make faster. Done as below to get implementation correct first.
     float vertex_000 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 0));
-    float vertex_001 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 1));
+    float vertex_001 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 0));
     float vertex_010 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 0));
-    float vertex_011 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 1));
-    float vertex_100 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 0));
+    float vertex_011 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 0));
+    float vertex_100 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 1));
     float vertex_101 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 1));
-    float vertex_110 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 0));
+    float vertex_110 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 1));
     float vertex_111 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 1));
     Eigen::Vector3f interpolationWeights = trueGridLocation - bottomLeftFrontIndex.cast<float>();
     return interpolate3D(vertex_000, vertex_001, vertex_010, vertex_011,
