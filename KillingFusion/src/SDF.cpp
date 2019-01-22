@@ -87,10 +87,6 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
     Eigen::Matrix3f depthIntrinsicMatrixInv = depthIntrinsicMatrix.inverse();
     Eigen::Matrix4f world_to_camera_pose = depthFrameC2WPose.inverse();
 
-#ifdef DEBUG
-    cout << "Lower bound of Voxels to loop over: \n" << minLocIndex.transpose() << "\n";
-    cout << "Upper bound of Voxels to loop over: \n" << maxLocIndex.transpose() << "\n";
-#endif
     for (int z = 0; z < m_gridSize(2); z++)
     {
         float Z = m_voxelSize * (z + 0.5f) + m_min3dLoc(2);
@@ -100,10 +96,6 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
             for (int x = 0; x < m_gridSize(0); x++)
             {
                 float X = m_voxelSize * (x + 0.5f) + m_min3dLoc(0);
-#ifdef DEBUG
-                    cout << "Voxel Center location in grid voxelsize is : " << x << ", " << y << ", " << z << "\n";
-                    cout << "Voxel Center location in world is : " << X << ", " << Y << ", " << Z << "\n";
-#endif
                 // Compute 3d location of center of voxel
                 // Backproject it to the depth image
                 Eigen::Vector4f voxelCenter(X, Y, Z, 1);
@@ -111,25 +103,13 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
                 Eigen::Vector3f voxelPixelLocation(voxelCenterInCamera(0) / voxelCenterInCamera(2),
                                                    voxelCenterInCamera(1) / voxelCenterInCamera(2), 1);
                 voxelPixelLocation = depthIntrinsicMatrix * voxelPixelLocation;
-                
-#ifdef DEBUG
-                    cout << "Voxel Center's World homogeneous location is : " << voxelCenter.transpose() << "\n";
-                    cout << "Voxel Center's Image homogeneous location is : " << voxelCenterInCamera.transpose() << "\n";
-                    cout << "Voxel Center's Image pixel location is : " << voxelPixelLocation.transpose() << "\n";
-#endif
 
                 // If pixel is outside the image, check next voxel
                 int col = roundf(voxelPixelLocation(0) + 0.5f);
-#ifdef DEBUG
-                cout << "Col : " << col << "\n";
-#endif
                 if (col < 0 || col >= depthFrame.cols)
                     continue;
 
                 int row = roundf(voxelPixelLocation(1) + 0.5f);
-#ifdef DEBUG
-                cout << "Row : " << row << "\n";
-#endif
                 if (row < 0 || row >= depthFrame.rows)
                     continue;
 
