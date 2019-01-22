@@ -7,7 +7,7 @@
 #include "DatasetReader.h"
 #include "config.h"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char ** argv) {
   DatasetReader datasetReader(DATA_DIR, SNOOPY);
   KillingFusion fusion(datasetReader);
   fusion.process();
