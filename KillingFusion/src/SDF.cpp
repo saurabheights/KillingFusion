@@ -3,6 +3,7 @@
 //
 
 #include "SDF.h"
+#include "config.h"
 using namespace std;
 
 SDF::SDF(float _voxelSize,
@@ -218,8 +219,24 @@ void SDF::fuse(const SDF *otherSdf)
         else
         {
             float dist1 = m_voxelGridTSDF.at(voxelIndex);
-            m_voxelGridTSDF.at(voxelIndex) = (w1 * dist1 + w2 * dist2) / (w1 + w2);
-            m_voxelGridWeight.at(voxelIndex) = (w1 + w2);
+            if (FUSE_BY_MERGE)
+            { // If voxels are aligned, this addition makes sense
+                m_voxelGridTSDF.at(voxelIndex) = (w1 * dist1 + w2 * dist2) / (w1 + w2);
+                m_voxelGridWeight.at(voxelIndex) = (w1 + w2);
+            }
+            else
+            { // If you think of SDF mathematically, this is how you should fuse.
+                if (fabs(dist1) < fabs(dist2))
+                {
+                    m_voxelGridTSDF.at(voxelIndex) = dist1;
+                    m_voxelGridWeight.at(voxelIndex) = w1;
+                }
+                else
+                {
+                    m_voxelGridTSDF.at(voxelIndex) = dist2;
+                    m_voxelGridWeight.at(voxelIndex) = w2;
+                }
+            }
         }
     }
 }
@@ -255,8 +272,24 @@ void SDF::fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementFi
                 else
                 {
                     float dist1 = m_voxelGridTSDF.at(voxelIndex);
-                    m_voxelGridTSDF.at(voxelIndex) = (w1 * dist1 + w2 * dist2) / (w1 + w2);
-                    m_voxelGridWeight.at(voxelIndex) = (w1 + w2);
+                    if (FUSE_BY_MERGE)
+                    { // If voxels are aligned, this addition makes sense
+                        m_voxelGridTSDF.at(voxelIndex) = (w1 * dist1 + w2 * dist2) / (w1 + w2);
+                        m_voxelGridWeight.at(voxelIndex) = (w1 + w2);
+                    }
+                    else
+                    { // If you think of SDF mathematically, this is how you should fuse.
+                        if (fabs(dist1) < fabs(dist2))
+                        {
+                            m_voxelGridTSDF.at(voxelIndex) = dist1;
+                            m_voxelGridWeight.at(voxelIndex) = w1;
+                        }
+                        else
+                        {
+                            m_voxelGridTSDF.at(voxelIndex) = dist2;
+                            m_voxelGridWeight.at(voxelIndex) = w2;
+                        }
+                    }
                 }
             }
         }

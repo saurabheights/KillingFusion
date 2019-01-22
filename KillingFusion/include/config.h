@@ -11,6 +11,7 @@
 extern float VoxelSize;
 extern float UnknownClipDistance;
 extern float MaxSurfaceVoxelDistance;
+extern bool FUSE_BY_MERGE;
 // Dataset and Pipeline to Use
 
 // ToDo: later add another layer of VariationalFusion between main and KillingFusion class and further

@@ -4,6 +4,7 @@
 float VoxelSize = 0.01f;
 float UnknownClipDistance = VoxelSize * 2;
 float MaxSurfaceVoxelDistance = VoxelSize * 4;
+bool FUSE_BY_MERGE=true;
 
 // Dataset and Pipeline to Use
 const FusionTechnique fusionTechnique = KILLING_FUSION;
