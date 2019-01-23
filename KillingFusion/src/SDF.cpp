@@ -2,8 +2,12 @@
 // Created by Saurabh Khanduja on 26.10.18.
 //
 
+#include <sstream>
+#include <iomanip>
 #include "SDF.h"
 #include "config.h"
+#include "SimpleMesh.h"
+#include "MarchingCubes.h"
 using namespace std;
 
 SDF::SDF(float _voxelSize,
@@ -65,9 +69,9 @@ vector<SDF> SDF::getDataEnergyTestSample(float _voxelSize,
     SDF nextSdf(_voxelSize, _min3dLoc, _max3dLoc, unknownClipDistance);
 
     // Build Sphere with different center
-    Eigen::Vector3f canSdfSphereCenter = (canSdf.m_gridSize / 2).cast<float>() + Eigen::Vector3f(0.5,0.5,-0.5);
+    Eigen::Vector3f canSdfSphereCenter = (canSdf.m_gridSize / 2).cast<float>() + Eigen::Vector3f(0.5, 0.5, -0.5);
     cout << "Center for First Sphere is " << canSdfSphereCenter.transpose() << endl;
-    Eigen::Vector3f nextSdfSphereCenter = (canSdf.m_gridSize / 2).cast<float>() + Eigen::Vector3f(0.5,0.5,0.5);
+    Eigen::Vector3f nextSdfSphereCenter = (canSdf.m_gridSize / 2).cast<float>() + Eigen::Vector3f(0.5, 0.5, 0.5);
     cout << "Center for Second Sphere is " << nextSdfSphereCenter.transpose() << endl;
     float radius = 3 * canSdf.m_voxelSize;
     for (int z = 0; z < canSdf.m_gridSize(2); z++)
@@ -243,7 +247,9 @@ void SDF::fuse(const SDF *otherSdf)
 
 void SDF::fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementField)
 {
+#ifndef MY_DEBUG
 #pragma omp parallel for
+#endif
     for (int z = 0; z < m_gridSize(2); z++)
     {
         for (int y = 0; y < m_gridSize(1); y++)
@@ -294,6 +300,107 @@ void SDF::fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementFi
             }
         }
     }
+}
+
+bool SDF::ProcessVolumeCell(int x, int y, int z, double iso, SimpleMesh *mesh) const
+{
+    MC_Gridcell cell;
+
+    Eigen::Vector3d tmp;
+
+    // cell corners
+    Eigen::Vector3d halfGridSize = (m_gridSize.cast<double>() / 2);
+    cell.p[0] = (Eigen::Vector3d(x + 1, y, z).array() / halfGridSize.array()) - 1;
+    cell.p[1] = (Eigen::Vector3d(x, y, z).array() / halfGridSize.array()) - 1;
+    cell.p[2] = (Eigen::Vector3d(x, y + 1, z).array() / halfGridSize.array()) - 1;
+    cell.p[3] = (Eigen::Vector3d(x + 1, y + 1, z).array() / halfGridSize.array()) - 1;
+    cell.p[4] = (Eigen::Vector3d(x + 1, y, z + 1).array() / halfGridSize.array()) - 1;
+    cell.p[5] = (Eigen::Vector3d(x, y, z + 1).array() / halfGridSize.array()) - 1;
+    cell.p[6] = (Eigen::Vector3d(x, y + 1, z + 1).array() / halfGridSize.array()) - 1;
+    cell.p[7] = (Eigen::Vector3d(x + 1, y + 1, z + 1).array() / halfGridSize.array()) - 1;
+
+    // cell corner values
+    cell.val[0] = (double)getDistanceAtIndex(x + 1, y, z);
+    cell.val[1] = (double)getDistanceAtIndex(x, y, z);
+    cell.val[2] = (double)getDistanceAtIndex(x, y + 1, z);
+    cell.val[3] = (double)getDistanceAtIndex(x + 1, y + 1, z);
+    cell.val[4] = (double)getDistanceAtIndex(x + 1, y, z + 1);
+    cell.val[5] = (double)getDistanceAtIndex(x, y, z + 1);
+    cell.val[6] = (double)getDistanceAtIndex(x, y + 1, z + 1);
+    cell.val[7] = (double)getDistanceAtIndex(x + 1, y + 1, z + 1);
+
+    MC_Triangle tris[6];
+    int numTris = Polygonise(cell, iso, tris);
+
+    if (numTris == 0)
+        return false;
+
+    for (int i1 = 0; i1 < numTris; i1++)
+    {
+        Vertex v0((float)tris[i1].p[0][0], (float)tris[i1].p[0][1], (float)tris[i1].p[0][2]);
+        Vertex v1((float)tris[i1].p[1][0], (float)tris[i1].p[1][1], (float)tris[i1].p[1][2]);
+        Vertex v2((float)tris[i1].p[2][0], (float)tris[i1].p[2][1], (float)tris[i1].p[2][2]);
+
+        unsigned int vhandle[3];
+        vhandle[0] = mesh->AddVertex(v0);
+        vhandle[1] = mesh->AddVertex(v1);
+        vhandle[2] = mesh->AddVertex(v2);
+
+        mesh->AddFace(vhandle[0], vhandle[1], vhandle[2]);
+    }
+
+    return true;
+}
+
+void SDF::save_mesh(std::string mesh_name_prefix,
+                    int fileCounter) const
+{
+    std::ostringstream filenameOutStream;
+    filenameOutStream << OUTPUT_DIR << outputDir[datasetType] << mesh_name_prefix << std::setw(3) << std::setfill('0') << fileCounter << ".off";
+    std::string filenameOut = filenameOutStream.str();
+
+    SimpleMesh* mesh = getMesh();
+    // write mesh to file
+    if (!mesh->WriteMesh(filenameOut))
+    {
+        std::cout << "ERROR: unable to write output file at" << filenameOut << "!" << std::endl;
+    }
+    delete mesh;
+}
+
+SimpleMesh* SDF::getMesh() const
+{
+    SimpleMesh* mesh = new SimpleMesh();
+    for (int z = 0; z < m_gridSize(2); z++)
+    {
+        for (int y = 0; y < m_gridSize(1); y++)
+        {
+            for (int x = 0; x < m_gridSize(0); x++)
+            {
+                float distance = getDistanceAtIndex(x, y, z);
+                if (distance > 3 * m_voxelSize || distance < -3 * m_voxelSize)
+                    continue;
+                ProcessVolumeCell(x, y, z, 0.00f, mesh);
+            }
+        }
+    }
+    return mesh;
+}
+
+SimpleMesh* SDF::getMesh(const DisplacementField& displacementField) const
+{
+    SDF deformedSdf(m_voxelSize, m_min3dLoc, m_max3dLoc, m_unknownClipDistance);
+    deformedSdf.fuse(this, &displacementField);
+    return deformedSdf.getMesh();
+}
+
+void SDF::save_mesh(std::string mesh_name_prefix,
+                    int fileCounter,
+                    const DisplacementField& displacementField) const
+{
+    SDF deformedSdf(m_voxelSize, m_min3dLoc, m_max3dLoc, m_unknownClipDistance);
+    deformedSdf.fuse(this, &displacementField);
+    deformedSdf.save_mesh(mesh_name_prefix, fileCounter);
 }
 
 void SDF::dumpToBinFile(string outputFilePath,
@@ -476,7 +583,6 @@ Eigen::Matrix3f SDF::computeDistanceHessian(const Eigen::Vector3f &gridLocation)
         (gridLocation.array() >= m_gridSize.array().cast<float>()).any())
         return Eigen::Matrix3f::Zero();
 
-    // https://en.wikipedia.org/wiki/Finite_difference#Finite_difference_in_several_variables
     // ToDo: Optimize - Ideally compute Gradient for whole SDF grid and the hessian of whole SDF grid. Reduce the repeat computation
     float fxyz = getDistance(gridLocation);
     float fxplus2yz = getDistance(gridLocation + Eigen::Vector3f(2, 0, 0));

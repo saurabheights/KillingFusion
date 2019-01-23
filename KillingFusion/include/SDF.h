@@ -10,6 +10,7 @@
 #include <iostream>
 #include <vector>
 #include "DisplacementField.h"
+#include "SimpleMesh.h"
 
 class SDF
 {
@@ -28,6 +29,7 @@ class SDF
 
   void computeVoxelGridSize();
   void allocateMemoryForSDF();
+  bool ProcessVolumeCell(int x, int y, int z, double iso, SimpleMesh *mesh) const;
 
 public:
   // ToDo: Remove use of truncationDistanceInVoxelSize and add a method getTruncatedDistance.
@@ -37,9 +39,11 @@ public:
       float unknownClipDistance);
 
   // Creates a new SDF of same size as copy. Voxel weight and distance is not copied.
-  SDF(const SDF& copy) noexcept;
+  SDF(const SDF &copy)
+  noexcept;
 
-  SDF(SDF&& f) noexcept;
+  SDF(SDF &&f)
+  noexcept;
 
   ~SDF();
 
@@ -118,6 +122,24 @@ public:
    * Fuses otherSdf using its DisplacementField
    */
   void fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementField);
+
+  /**
+   * Dumps mesh of SDF using marching cubes algorithm.
+   */
+  void save_mesh(std::string mesh_name_prefix, int fileCounter) const;
+
+  /**
+   * Returns mesh of SDF using marching cubes algorithm.
+   */
+  SimpleMesh* getMesh() const;
+  SimpleMesh* getMesh(const DisplacementField& displacementField) const;
+
+  /**
+   * Dumps mesh of SDF with deformation field applied using marching cubes algorithm.
+   */
+  void save_mesh(std::string mesh_name_prefix,
+                 int fileCounter,
+                 const DisplacementField& displacementField) const;
 
   /**
    * Writes the SDF to a file

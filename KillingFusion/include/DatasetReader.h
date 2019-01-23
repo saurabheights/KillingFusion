@@ -27,7 +27,7 @@ private:
 public:
   DatasetReader() = delete;
 
-  DatasetReader(const std::string DatasetRootDir, const DEFORMABLE_DATASET dataset);
+  DatasetReader(const std::string DatasetRootDir);
 
   std::vector<cv::Mat> getImages(int frameIndex);
 

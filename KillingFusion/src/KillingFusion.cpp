@@ -21,6 +21,10 @@ KillingFusion::KillingFusion(DatasetReader datasetReader)
                            frameBound.first,
                            frameBound.second,
                            UnknownClipDistance);
+  cout << m_canonicalSdf->getGridSize().transpose() << endl;
+  m_startFrame = 5;
+  m_endFrame = 100;
+  m_currFrameIndex = m_startFrame;
 }
 
 KillingFusion::~KillingFusion()
@@ -33,8 +37,10 @@ KillingFusion::~KillingFusion()
 void KillingFusion::process()
 {
   // Set the sequence of image to process
-  int startFrame = 0;
-  int endFrame = m_datasetReader.getNumImageFiles();
+  // int startFrame = 0;
+  int startFrame = 4;
+  int endFrame = 100;
+  // int endFrame = m_datasetReader.getNumImageFiles();
 
   // Displacement Field for the previous and current frame.
   DisplacementField *prev2CanDisplacementField, *curr2CanDisplacementField;
@@ -48,7 +54,7 @@ void KillingFusion::process()
   Timer totalTimer, timer;
   cout << "Iter   Compute SDF    KillingOptimize    Fuse SDF\n";
   // For each image file from DatasetReader
-  for (int i = startFrame+1; i < endFrame; ++i)
+  for (int i = startFrame + 1; i < endFrame; ++i)
   {
     // Convert current frame to SDF - currSdf
     timer.reset();
@@ -78,6 +84,45 @@ void KillingFusion::process()
   cout << "Total time spent " << totalTimer.elapsed() << endl;
   m_canonicalSdf->dumpToBinFile("output.bin",
                                 UnknownClipDistance, 1.0f);
+}
+
+SimpleMesh* KillingFusion::processNextFrame()
+{
+  if (m_currFrameIndex == m_startFrame)
+  {
+    m_canonicalSdf = computeSDF(m_startFrame);
+    m_prev2CanDisplacementField = createZeroDisplacementField(*m_canonicalSdf);
+  }
+  else if (m_currFrameIndex < m_endFrame)
+  {
+    Timer totalTimer, timer;
+    cout << "Iter   Compute SDF    KillingOptimize    Fuse SDF\n";
+    timer.reset();
+    // Convert current frame to SDF - currSdf
+    SDF *currSdf = computeSDF(m_currFrameIndex);
+    double sdfTime = timer.elapsed();
+
+    // Future Task - Implement SDF-2-SDF to register currSDF to prevSDF
+    // Future Task - ToDo - DisplacementField should have same shape as their SDF.
+    DisplacementField* curr2CanDisplacementField = m_prev2CanDisplacementField;
+
+    timer.reset();
+    // Compute Deformation Field for current frame SDF to merge with m_canonicalSdf
+    computeDisplacementField(currSdf, m_canonicalSdf, curr2CanDisplacementField);
+    double killingTime = timer.elapsed();
+
+    timer.reset();
+    // Merge the m_currSdf to m_canonicalSdf using m_currSdf displacement field.
+    m_canonicalSdf->fuse(currSdf, curr2CanDisplacementField);
+    double fuseTime = timer.elapsed();
+
+    // ToDo - How to Save Live Canonical SDF registered towards CurrentFrame
+    m_prev2CanDisplacementField = curr2CanDisplacementField;
+    delete currSdf;
+    printf("%03d\t%0.6fs\t%0.6fs\t%0.6fs\n", m_currFrameIndex, sdfTime, killingTime, fuseTime);
+  }
+  m_currFrameIndex+=2;
+  return m_canonicalSdf->getMesh();
 }
 
 void KillingFusion::processTest(int testType)

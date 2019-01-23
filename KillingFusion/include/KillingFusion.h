@@ -12,6 +12,13 @@
 
 class KillingFusion
 {
+  // Variables for processing one frame at a time
+  int m_startFrame;
+  int m_endFrame;
+  int m_currFrameIndex;
+  DisplacementField *m_prev2CanDisplacementField;
+  ////////////////
+
   DatasetReader m_datasetReader;
 
   SDF *m_canonicalSdf;
@@ -58,7 +65,12 @@ public:
   KillingFusion(DatasetReader datasetReader);
   ~KillingFusion();
   void process();
+  SimpleMesh *processNextFrame();
   void processTest(int testType);
+  int getCurrentFrameIndex()
+  {
+    return m_currFrameIndex;
+  }
 };
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_FUSION_H

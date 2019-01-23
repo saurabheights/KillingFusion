@@ -32,10 +32,13 @@ enum DEFORMABLE_DATASET
   DUCK = 0,
   SNOOPY = 1
 };
+
+extern DEFORMABLE_DATASET datasetType;
 extern int numImageFiles[2];
 extern std::string imageDir[2];
 extern std::string intrinsicParamsFile;
 extern float datasetDepthMinMaxValues[2][2];
+extern std::string outputDir[2];
 
 /**
  * Killing Fusion Pipeline configuration

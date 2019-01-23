@@ -10,18 +10,19 @@
 #include <limits>
 #include <opencv2/opencv.hpp>
 #include <Eigen/Eigen>
+#include "config.h"
 
-DatasetReader::DatasetReader(const std::string DatasetRootDir, const DEFORMABLE_DATASET dataset)
+DatasetReader::DatasetReader(const std::string DatasetRootDir)
 {
-  m_imageDir = DatasetRootDir + imageDir[dataset];
-  m_numImageFiles = numImageFiles[dataset];
+  m_imageDir = DatasetRootDir + imageDir[datasetType];
+  m_numImageFiles = numImageFiles[datasetType];
   std::vector<float> intrinsicParams = LoadMatrixFromFile(DatasetRootDir + intrinsicParamsFile, 3 * 3);
   m_depthIntrinsicMatrix << intrinsicParams[0], intrinsicParams[1], intrinsicParams[2],
       intrinsicParams[3], intrinsicParams[4], intrinsicParams[5],
       intrinsicParams[6], intrinsicParams[7], intrinsicParams[8];
   m_depthHeight = 480;
   m_depthWidth = 640;
-  analyzeMinMaxDepthValues(dataset);
+  analyzeMinMaxDepthValues(datasetType);
 }
 
 /**
