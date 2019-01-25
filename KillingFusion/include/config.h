@@ -51,11 +51,15 @@ extern float alpha;
 // Convergence criterion - Stop when gradient < threshold  
 extern float threshold;
 
-// Killing condition weights 
+// Killing condition weights
 extern float omegaKilling;
+
+// Killing - Rigidity factor
+extern float gammaKilling;
 
 // Level-set condition weights
 extern float omegaLevelSet;
+
 // Level-set - Prevents division by zero
 extern float epsilon;
 

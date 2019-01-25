@@ -25,6 +25,7 @@ KillingFusion::KillingFusion(DatasetReader datasetReader)
   m_startFrame = 5;
   m_endFrame = 100;
   m_currFrameIndex = m_startFrame;
+  m_prev2CanDisplacementField = nullptr;
 }
 
 KillingFusion::~KillingFusion()
@@ -32,6 +33,8 @@ KillingFusion::~KillingFusion()
   // ToDo - Use Unique Ptr
   if (m_canonicalSdf != nullptr)
     delete m_canonicalSdf;
+  if (m_prev2CanDisplacementField != nullptr)
+    delete m_prev2CanDisplacementField;
 }
 
 void KillingFusion::process()
@@ -86,7 +89,7 @@ void KillingFusion::process()
                                 UnknownClipDistance, 1.0f);
 }
 
-SimpleMesh* KillingFusion::processNextFrame()
+SimpleMesh *KillingFusion::processNextFrame()
 {
   if (m_currFrameIndex == m_startFrame)
   {
@@ -104,7 +107,7 @@ SimpleMesh* KillingFusion::processNextFrame()
 
     // Future Task - Implement SDF-2-SDF to register currSDF to prevSDF
     // Future Task - ToDo - DisplacementField should have same shape as their SDF.
-    DisplacementField* curr2CanDisplacementField = m_prev2CanDisplacementField;
+    DisplacementField *curr2CanDisplacementField = m_prev2CanDisplacementField;
 
     timer.reset();
     // Compute Deformation Field for current frame SDF to merge with m_canonicalSdf
@@ -254,9 +257,12 @@ Eigen::Vector3f KillingFusion::computeEnergyGradient(const SDF *src,
                                                      const Eigen::Vector3i &spatialIndex,
                                                      const Eigen::Vector3f &p)
 {
-  return computeDataEnergyGradient(src, dest, srcDisplacementField, spatialIndex, p) +
-         computeKillingEnergyGradient(src, srcDisplacementField, spatialIndex, p) * omegaKilling +
-         computeLevelSetEnergyGradient(src, srcDisplacementField, spatialIndex, p) * omegaLevelSet;
+  Eigen::Vector3f data_grad(0, 0, 0), killing_grad(0, 0, 0), levelset_grad(0, 0, 0);
+  data_grad = computeDataEnergyGradient(src, dest, srcDisplacementField, spatialIndex, p);
+  killing_grad = computeKillingEnergyGradient(srcDisplacementField, spatialIndex) * omegaKilling;
+  levelset_grad = computeLevelSetEnergyGradient(src, srcDisplacementField, spatialIndex, p) * omegaLevelSet;
+
+  return data_grad + killing_grad + levelset_grad;
 }
 
 Eigen::Vector3f KillingFusion::computeDataEnergyGradient(const SDF *src,
@@ -274,12 +280,11 @@ Eigen::Vector3f KillingFusion::computeDataEnergyGradient(const SDF *src,
   return (srcPointDistance - destPointDistance) * srcPointDistanceGradient.array();
 }
 
-Eigen::Vector3f KillingFusion::computeKillingEnergyGradient(const SDF *src,
-                                                            const DisplacementField *srcDisplacementField,
-                                                            const Eigen::Vector3i &spatialIndex,
-                                                            const Eigen::Vector3f &p)
+Eigen::Vector3f KillingFusion::computeKillingEnergyGradient(const DisplacementField *srcDisplacementField,
+                                                            const Eigen::Vector3i &spatialIndex)
 {
-  return Eigen::Vector3f::Zero();
+  Eigen::Vector3f killingGrad = srcDisplacementField->computeKillingEnergyGradient(spatialIndex);
+  return killingGrad;
 }
 
 Eigen::Vector3f KillingFusion::computeLevelSetEnergyGradient(const SDF *src,

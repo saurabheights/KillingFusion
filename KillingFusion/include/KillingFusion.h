@@ -51,10 +51,8 @@ class KillingFusion
                                             const DisplacementField *srcDisplacementField,
                                             const Eigen::Vector3i &spatialIndex,
                                             const Eigen::Vector3f &p);
-  Eigen::Vector3f computeKillingEnergyGradient(const SDF *src,
-                                               const DisplacementField *srcDisplacementField,
-                                               const Eigen::Vector3i &spatialIndex,
-                                               const Eigen::Vector3f &p);
+  Eigen::Vector3f computeKillingEnergyGradient(const DisplacementField *srcDisplacementField,
+                                               const Eigen::Vector3i &spatialIndex);
   Eigen::Vector3f computeLevelSetEnergyGradient(const SDF *src,
                                                 const DisplacementField *srcDisplacementField,
                                                 const Eigen::Vector3i &spatialIndex,

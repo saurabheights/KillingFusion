@@ -302,14 +302,17 @@ static void draw()
   glutPostRedisplay();
 
   // Convert to FreeImage format & save to file
-  glFinish();  
+  glFinish();  // When doing heavy processing, the glReadPixels does not load all data.
   int width = 800;
   int height = 600;
   BYTE* pixels = new BYTE[3 * width * height];
   glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
   glFinish();
   FIBITMAP* image = FreeImage_ConvertFromRawBits(pixels, width, height, 3 * width, 24, 0x0000FF, 0xFF0000, 0x00FF00, false);
-  FreeImage_Save(FIF_PNG, image, ("SnapShot" + std::to_string(currentFrameIndex) + ".png").c_str(), 0);
+  std::string VoxelSizeStr = std::to_string(VoxelSize);
+  std::string MergeStrategy = std::to_string(FUSE_BY_MERGE);
+  std::string filename = std::to_string(currentFrameIndex) + "-Data-LS-Fuse-" + MergeStrategy + "-Result-VoxelSize_" + VoxelSizeStr + ".png";
+  FreeImage_Save(FIF_PNG, image, (OUTPUT_DIR + outputDir[datasetType] + filename).c_str(), 0);
   FreeImage_Unload(image);
   delete [] pixels;
   delete mesh;
@@ -342,5 +345,7 @@ int main(int argc, char **argv)
   initGL(800, 600);
 
   glutMainLoop();
+  delete datasetReader;
+  delete fusion;
   return 0;
 }

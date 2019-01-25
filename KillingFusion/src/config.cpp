@@ -35,8 +35,15 @@ int KILLING_MAX_ITERATIONS = 32;
 float threshold = 0.1f;
 
 float alpha = 0.1f;
-float omegaKilling = 0.5f;
-float omegaLevelSet = 0.2f;
+
+// Killing weights
+float omegaKilling = 0.2f;
+
+// Killing - Purity
+float gammaKilling = 0.1f;
+
+// Level-set condition weights
+float omegaLevelSet = 0.4f;
 
 // Level-set - Prevents division by zero
 float epsilon = 0.00001f;
