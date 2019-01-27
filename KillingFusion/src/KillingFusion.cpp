@@ -89,12 +89,19 @@ void KillingFusion::process()
                                 UnknownClipDistance, 1.0f);
 }
 
-SimpleMesh *KillingFusion::processNextFrame()
+vector<SimpleMesh *> KillingFusion::processNextFrame()
 {
+  vector<SimpleMesh *> meshes;
+
+  SimpleMesh *canonicalMesh = nullptr, *currentSdfMesh = nullptr, *currentFrameRegisteredSdfMesh = nullptr;
+
   if (m_currFrameIndex == m_startFrame)
   {
     m_canonicalSdf = computeSDF(m_startFrame);
     m_prev2CanDisplacementField = createZeroDisplacementField(*m_canonicalSdf);
+    currentSdfMesh = m_canonicalSdf->getMesh();
+    currentFrameRegisteredSdfMesh = m_canonicalSdf->getMesh(*m_prev2CanDisplacementField);
+    m_currFrameIndex += 2;
   }
   else if (m_currFrameIndex < m_endFrame)
   {
@@ -121,11 +128,17 @@ SimpleMesh *KillingFusion::processNextFrame()
 
     // ToDo - How to Save Live Canonical SDF registered towards CurrentFrame
     m_prev2CanDisplacementField = curr2CanDisplacementField;
+    currentSdfMesh = currSdf->getMesh();
+    currentFrameRegisteredSdfMesh = currSdf->getMesh(*m_prev2CanDisplacementField);
     delete currSdf;
     printf("%03d\t%0.6fs\t%0.6fs\t%0.6fs\n", m_currFrameIndex, sdfTime, killingTime, fuseTime);
+    m_currFrameIndex += 2;
   }
-  m_currFrameIndex += 2;
-  return m_canonicalSdf->getMesh();
+  canonicalMesh = m_canonicalSdf->getMesh();
+  meshes.push_back(currentSdfMesh);
+  meshes.push_back(currentFrameRegisteredSdfMesh);
+  meshes.push_back(canonicalMesh);
+  return meshes;
 }
 
 void KillingFusion::processTest(int testType)

@@ -49,8 +49,6 @@ add_definitions(-DOUTPUT_DIR="${PROJECT_SOURCE_DIR}/output/")
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/OpenGlMath)
 
-file(GLOB OPENGL_RELATED_HEADERS RELATIVE ${PROJECT_SOURCE_DIR} "OpenGlMath/*.h" )
-file(GLOB OPENGL_RELATED_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} "OpenGlMath/*.cpp" )
 set(HEADER_FILES
         include/config.h
         include/Timer.h
@@ -71,11 +69,11 @@ set(SOURCE_FILES
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DMY_DEBUG")
 
 ## Targets
-add_executable(KillingFusion src/main.cpp ${HEADER_FILES} ${SOURCE_FILES} ${OPENGL_RELATED_HEADERS} ${OPENGL_RELATED_SOURCES})
+add_executable(KillingFusion src/main.cpp ${HEADER_FILES} ${SOURCE_FILES} )
 target_link_libraries(KillingFusion PRIVATE OpenMP::OpenMP_CXX libfreeimage-3.17.0.so ${OpenCV_LIBS} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
 
 ## Targets
-add_executable(KillingFusionGui src/mainGui.cpp ${HEADER_FILES} ${OPENGL_RELATED_HEADERS} ${OPENGL_RELATED_SOURCES} ${SOURCE_FILES} )
+add_executable(KillingFusionGui src/mainGui.cpp ${HEADER_FILES} ${SOURCE_FILES} )
 target_link_libraries(KillingFusionGui PRIVATE OpenMP::OpenMP_CXX libfreeimage-3.17.0.so ${OpenCV_LIBS} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
 
 get_cmake_property(_variableNames VARIABLES)

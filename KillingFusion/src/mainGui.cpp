@@ -28,17 +28,38 @@ static void reshape(int width, int height)
 /* initialize OpenGL settings */
 static void initGL(int width, int height)
 {
-  // reshape(width, height);
-
+  reshape(width, height);
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glClearDepth(1.0f);
-
   glEnable(GL_DEPTH_TEST);
-
   glDepthFunc(GL_LEQUAL);
-
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
+}
+
+cv::Mat resizeKeepAspectRatio(const cv::Mat &input, const cv::Size &dstSize, const cv::Scalar &bgcolor)
+{
+  cv::Mat output;
+
+  double h1 = dstSize.width * (input.rows / (double)input.cols);
+  double w2 = dstSize.height * (input.cols / (double)input.rows);
+  if (h1 <= dstSize.height)
+  {
+    cv::resize(input, output, cv::Size(dstSize.width, h1));
+  }
+  else
+  {
+    cv::resize(input, output, cv::Size(w2, dstSize.height));
+  }
+
+  int top = (dstSize.height - output.rows) / 2;
+  int down = (dstSize.height - output.rows + 1) / 2;
+  int left = (dstSize.width - output.cols) / 2;
+  int right = (dstSize.width - output.cols + 1) / 2;
+
+  cv::copyMakeBorder(output, output, top, down, left, right, cv::BORDER_CONSTANT, bgcolor);
+
+  return output;
 }
 
 void renderMesh(SimpleMesh *mesh)
@@ -54,14 +75,12 @@ void renderMesh(SimpleMesh *mesh)
     Vertex &v0 = vertices[triangle.idx0];
     Vertex &v1 = vertices[triangle.idx1];
     Vertex &v2 = vertices[triangle.idx2];
-    v0(0) = -v0(0);
-    v1(0) = -v1(0);
-    v2(0) = -v2(0);
+    // The negative sign is hack, since in SDF Z value increases inwards and in Opengl, its outwards. Somehow also affects y-sign.
+    // ToDo: Check if issue is from Marching Cubes or gluLookAt. gluLookAt probably inverts the camera to negative y-axis direction.
     v0(1) = -v0(1);
     v1(1) = -v1(1);
     v2(1) = -v2(1);
-    // The negative sign is hack, since in SDF Z value increases inwards and in Opengl, its outwards.
-    Vertex normal = -(v1 - v0).cross(v2 - v1).normalized();
+    Vertex normal = (v1 - v0).cross(v2 - v1).normalized();
     glNormal3fv(normal.data());
     glVertex3fv(v0.data());
     glVertex3fv(v1.data());
@@ -78,7 +97,7 @@ void renderImage(cv::Mat image)
   cv::Mat flippedImage;
   cv::flip(image, flippedImage, 0); // Opencv 0,0 is on topleft but opengl has 0,0 on bottom left
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glRasterPos2i(0, 0);
+  glRasterPos2i(-1, -1);
   glDrawPixels(flippedImage.cols, flippedImage.rows, GL_RGB, GL_UNSIGNED_BYTE, flippedImage.data);
 }
 
@@ -114,13 +133,15 @@ void displayText(int x, int y, int r, int g, int b, int screenWidth, int screenH
   gluOrtho2D(0, screenWidth, 0, screenHeight);
 
   glDisable(GL_LIGHTING);
-  glRasterPos2i(x, y); // or wherever in window coordinates
+  const int font_margin = 8;
+  const int font_char_pixel_wdith = 6;
+  glRasterPos2i(x - str.length() * font_char_pixel_wdith, y + font_margin); // or wherever in window coordinates
   for (int i = 0; i < str.length(); i++)
   {
     glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
   }
   glEnable(GL_LIGHTING);
-  
+
   glMatrixMode(GL_PROJECTION);
   glPopMatrix();
   glMatrixMode(GL_MODELVIEW);
@@ -150,53 +171,89 @@ static void draw()
 
   // Read the color image and the depth frame for the corresponding frame index
   std::vector<cv::Mat> colorDepthImageVec = datasetReader->getImages(currentFrameIndex);
-  cv::Mat colorResizedImage, depthResizedImage;
-  cv::resize(colorDepthImageVec[0], colorResizedImage, cv::Size(320, 240));
-  cv::resize(colorDepthImageVec[1], depthResizedImage, cv::Size(320, 240));
 
-  // Render Image in proper viewport and
-  int TextHeight = 50; // In Pixels
+  // Resize to 1/3 of screen width, 1/2 of screen height-Text
+  int TextHeight = 40; // In Pixels - ToDo - Improve this.
+  std::cout << screenWidth << std::endl;
+  int elementWidth = screenWidth / 3;
+  int elementHeight = screenHeight / 2 - TextHeight;
+  cv::Mat colorResizedImage = resizeKeepAspectRatio(colorDepthImageVec[0], cv::Size(elementWidth, elementHeight), cv::Scalar(0, 0, 0));
+  std::cout << elementWidth << " " << elementHeight << " " << colorResizedImage.size() << std::endl;
+  cv::Mat depthResizedImage = resizeKeepAspectRatio(colorDepthImageVec[1], cv::Size(elementWidth, elementHeight), cv::Scalar(0, 0, 0));
 
+  // Render Image in proper viewport and the text
   // Image - Color Image
   // Text - Color Image
   // Image - Depth Image
   // Text - Depth Image
-  glViewport(0, screenHeight / 2 + TextHeight, colorResizedImage.cols, colorResizedImage.rows);
+  glViewport(0, elementHeight + 2 * TextHeight, elementWidth, elementHeight);
   renderImage(colorResizedImage);
-  glViewport(0, 0, screenWidth, screenHeight);
-  displayText(colorResizedImage.cols/2, screenHeight / 2 + TextHeight, 128, 128, 128, screenWidth, screenHeight, "Input Frame");
-  glViewport(0, TextHeight, depthResizedImage.cols, depthResizedImage.rows);
-  renderDepthImage(depthResizedImage);
-  glViewport(0, 0, screenWidth, screenHeight);
-  displayText(colorResizedImage.cols/2, TextHeight, 128, 128, 128, screenWidth, screenHeight, "Depth Frame");
 
-  SimpleMesh *mesh = fusion->processNextFrame();
+  glViewport(0, 0, screenWidth, screenHeight);
+  std::stringstream name;
+  name << "Input Frame" << std::setfill(' ') << std::setw(3) << currentFrameIndex;
+  displayText(elementWidth / 2, elementHeight + TextHeight, 128, 128, 128, screenWidth, screenHeight, name.str().c_str());
+
+  glViewport(0, TextHeight, elementWidth, elementHeight);
+  renderDepthImage(depthResizedImage);
+
+  glViewport(0, 0, screenWidth, screenHeight);
+  std::stringstream().swap(name); // Clear the name stringstream
+  name << "Depth Frame" << std::setfill(' ') << std::setw(3) << currentFrameIndex;
+  displayText(elementWidth / 2, 0, 128, 128, 128, screenWidth, screenHeight, name.str().c_str());
+
+  // Perform KillingFusion on currentFrame
+  std::vector<SimpleMesh *> meshes = fusion->processNextFrame();
 
   // SDF Z axis is different from opengl. and somehow it also affects y-axis.
   gluLookAt(0, 0, -2,
             0, 0, -0.5,
             0, 1, 0);
 
-  // Render on a Square ViewPort on top right
-  glViewport(screenWidth / 2, 0, screenHeight / 2, screenHeight / 2);
-  glOrtho(-1, 1, -1, 1, 0, 1);
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-  renderMesh(mesh);
+  int minElementHeightAndWidth = MIN(elementHeight, elementWidth);
 
-  // Render second mesh on a Square ViewPort on bottom right
-  std::cout << mesh->getMinLoc().transpose() << " " << mesh->getMaxLoc().transpose() << std::endl;
-  glViewport(screenWidth / 2, screenHeight / 2, screenHeight / 2, screenHeight / 2);
-  glOrtho(-1, 1, -1, 1, 0, 1);
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-  renderMesh(mesh);
+  // Render Current Frame SDF mesh on a Square ViewPort on top 
+  if (meshes[0] != nullptr) {
+    glViewport(elementWidth, elementHeight + TextHeight, minElementHeightAndWidth, minElementHeightAndWidth);
+    glOrtho(-1, 1, -1, 1, 0, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    renderMesh(meshes[0]);
+  }
 
+  glViewport(0, 0, screenWidth, screenHeight);
+  displayText(elementWidth * 1.5, elementHeight + TextHeight, 128, 128, 128, screenWidth, screenHeight, "Current Frame SDF");
+
+  // Render Current Frame Deformed SDF mesh on a Square ViewPort on top right
+  if (meshes[1] != nullptr) {
+    glViewport(elementWidth * 2, elementHeight + TextHeight, minElementHeightAndWidth, minElementHeightAndWidth);
+    glOrtho(-1, 1, -1, 1, 0, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    renderMesh(meshes[1]);
+  }
+
+  glViewport(0, 0, screenWidth, screenHeight);
+  displayText(elementWidth * 2.5, elementHeight + TextHeight, 128, 128, 128, screenWidth, screenHeight, "Current Deformed SDF");
+
+  // Render Canonical SDF mesh on a Square ViewPort on bottom right
+  if (meshes[2] != nullptr) {
+    glViewport(elementWidth * 2, TextHeight, minElementHeightAndWidth, minElementHeightAndWidth);
+    glOrtho(-1, 1, -1, 1, 0, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    renderMesh(meshes[2]);
+  }
+
+  glViewport(0, 0, screenWidth, screenHeight);
+  displayText(elementWidth * 2.5, 0, 128, 128, 128, screenWidth, screenHeight, "Merged Canonical SDF");
 
   glutSwapBuffers();
   glutPostRedisplay();
 
-  // Save Screenshot
+  /**
+   * Save Screenshot
+   */
   // Convert to FreeImage format & save to file
   glFinish(); // When doing heavy processing, the glReadPixels does not load all data.
   BYTE *pixels = new BYTE[3 * screenWidth * screenHeight];
@@ -209,7 +266,13 @@ static void draw()
   FreeImage_Save(FIF_PNG, image, (OUTPUT_DIR + outputDir[datasetType] + filename).c_str(), 0);
   FreeImage_Unload(image);
   delete[] pixels;
-  delete mesh;
+
+  /**
+   * Release all KillingFusion resources
+   */
+  for (auto &&meshPtr : meshes)
+    if (meshPtr != nullptr)
+        delete meshPtr;
 }
 
 int main(int argc, char **argv)
@@ -221,12 +284,13 @@ int main(int argc, char **argv)
 
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
   glutCreateWindow("KillingFusion");
-  glutFullScreen();
 
   // register glut call backs
-  glutReshapeFunc(reshape);
+  // glutReshapeFunc(reshape);
+  glFinish(); // First go full screen
   glutDisplayFunc(draw);
-  initGL(800, 600);
+  initGL(1920, 1080);
+  glutFullScreen();
 
   // Run Main Loop
   glutMainLoop();

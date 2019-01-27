@@ -74,7 +74,7 @@ public:
    * Second is of deformed current frame SDF.
    * Third is of new canonincal SDF.
    */
-  SimpleMesh *processNextFrame();
+  std::vector<SimpleMesh *> processNextFrame();
 
   /**
    * Test KillingFusion on two Sphere SDF
