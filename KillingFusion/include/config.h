@@ -40,6 +40,8 @@ extern std::string intrinsicParamsFile;
 extern float datasetDepthMinMaxValues[2][2];
 extern std::string outputDir[2];
 
+extern const bool EnergyTypeUsed[3];
+
 /**
  * Killing Fusion Pipeline configuration
  */

@@ -191,7 +191,7 @@ static void draw()
 
   glViewport(0, 0, screenWidth, screenHeight);
   std::stringstream name;
-  name << "Input Frame" << std::setfill(' ') << std::setw(3) << currentFrameIndex;
+  name << "Input Frame" << std::setfill(' ') << std::setw(4) << currentFrameIndex;
   displayText(elementWidth / 2, elementHeight + TextHeight, 128, 128, 128, screenWidth, screenHeight, name.str().c_str());
 
   glViewport(0, TextHeight, elementWidth, elementHeight);
@@ -199,7 +199,7 @@ static void draw()
 
   glViewport(0, 0, screenWidth, screenHeight);
   std::stringstream().swap(name); // Clear the name stringstream
-  name << "Depth Frame" << std::setfill(' ') << std::setw(3) << currentFrameIndex;
+  name << "Depth Frame" << std::setfill(' ') << std::setw(4) << currentFrameIndex;
   displayText(elementWidth / 2, 0, 128, 128, 128, screenWidth, screenHeight, name.str().c_str());
 
   // Perform KillingFusion on currentFrame
@@ -212,8 +212,9 @@ static void draw()
 
   int minElementHeightAndWidth = MIN(elementHeight, elementWidth);
 
-  // Render Current Frame SDF mesh on a Square ViewPort on top 
-  if (meshes[0] != nullptr) {
+  // Render Current Frame SDF mesh on a Square ViewPort on top
+  if (meshes[0] != nullptr)
+  {
     glViewport(elementWidth, elementHeight + TextHeight, minElementHeightAndWidth, minElementHeightAndWidth);
     glOrtho(-1, 1, -1, 1, 0, 1);
     glMatrixMode(GL_MODELVIEW);
@@ -225,7 +226,8 @@ static void draw()
   displayText(elementWidth * 1.5, elementHeight + TextHeight, 128, 128, 128, screenWidth, screenHeight, "Current Frame SDF");
 
   // Render Current Frame Deformed SDF mesh on a Square ViewPort on top right
-  if (meshes[1] != nullptr) {
+  if (meshes[1] != nullptr)
+  {
     glViewport(elementWidth * 2, elementHeight + TextHeight, minElementHeightAndWidth, minElementHeightAndWidth);
     glOrtho(-1, 1, -1, 1, 0, 1);
     glMatrixMode(GL_MODELVIEW);
@@ -237,7 +239,8 @@ static void draw()
   displayText(elementWidth * 2.5, elementHeight + TextHeight, 128, 128, 128, screenWidth, screenHeight, "Current Deformed SDF");
 
   // Render Canonical SDF mesh on a Square ViewPort on bottom right
-  if (meshes[2] != nullptr) {
+  if (meshes[2] != nullptr)
+  {
     glViewport(elementWidth * 2, TextHeight, minElementHeightAndWidth, minElementHeightAndWidth);
     glOrtho(-1, 1, -1, 1, 0, 1);
     glMatrixMode(GL_MODELVIEW);
@@ -260,10 +263,18 @@ static void draw()
   glReadPixels(0, 0, screenWidth, screenHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels);
   glFinish();
   FIBITMAP *image = FreeImage_ConvertFromRawBits(pixels, screenWidth, screenHeight, 3 * screenWidth, 24, 0x0000FF, 0xFF0000, 0x00FF00, false);
-  std::string VoxelSizeStr = std::to_string(VoxelSize);
-  std::string MergeStrategy = std::to_string(FUSE_BY_MERGE);
-  std::string filename = std::to_string(currentFrameIndex) + "-Data-LS-Fuse-" + MergeStrategy + "-Result-VoxelSize_" + VoxelSizeStr + ".png";
-  FreeImage_Save(FIF_PNG, image, (OUTPUT_DIR + outputDir[datasetType] + filename).c_str(), 0);
+
+  std::stringstream filenameStream;
+  filenameStream << OUTPUT_DIR << outputDir[datasetType] << std::setfill('0') << std::setw(3) << std::to_string(currentFrameIndex)
+                 << "_Data-" << EnergyTypeUsed[0]
+                 << "_LS-" << EnergyTypeUsed[1] << "_omegaLS-" << omegaLevelSet
+                 << "_KVF-" << EnergyTypeUsed[2] << "_omegaK-" << omegaKilling << "_gammaK-" << gammaKilling
+                 << "_Fuse-" << (FUSE_BY_MERGE ? "Merge" : "Math")
+                 << "_VoxelSize-" << VoxelSize
+                 << "_UnknownClipDist-" << UnknownClipDistance
+                 << "_MaxSurfaceVoxelDist-" << MaxSurfaceVoxelDistance
+                 << ".png";
+  FreeImage_Save(FIF_PNG, image, filenameStream.str().c_str(), 0);
   FreeImage_Unload(image);
   delete[] pixels;
 
@@ -272,7 +283,7 @@ static void draw()
    */
   for (auto &&meshPtr : meshes)
     if (meshPtr != nullptr)
-        delete meshPtr;
+      delete meshPtr;
 }
 
 int main(int argc, char **argv)

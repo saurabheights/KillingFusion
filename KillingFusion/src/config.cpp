@@ -20,6 +20,7 @@ float datasetDepthMinMaxValues[2][2] = {
 
 std::string outputDir[2] = {"Duck/", "Snoopy/"};
 
+const bool EnergyTypeUsed[3] = {true, true, false}; // Data, LevelSet, Killing
 /**
  * Killing Fusion Pipeline configuration
  * The parameters were fixed as follows: gradient descent step α = 0.1, 

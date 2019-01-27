@@ -270,9 +270,19 @@ Eigen::Vector3f KillingFusion::computeEnergyGradient(const SDF *src,
                                                      const Eigen::Vector3f &p)
 {
   Eigen::Vector3f data_grad(0, 0, 0), killing_grad(0, 0, 0), levelset_grad(0, 0, 0);
-  data_grad = computeDataEnergyGradient(src, dest, srcDisplacementField, spatialIndex, p);
-  killing_grad = computeKillingEnergyGradient(srcDisplacementField, spatialIndex) * omegaKilling;
-  levelset_grad = computeLevelSetEnergyGradient(src, srcDisplacementField, spatialIndex, p) * omegaLevelSet;
+
+  if (EnergyTypeUsed[0])
+  {
+    data_grad = computeDataEnergyGradient(src, dest, srcDisplacementField, spatialIndex, p);
+  }
+  if (EnergyTypeUsed[1])
+  {
+    levelset_grad = computeLevelSetEnergyGradient(src, srcDisplacementField, spatialIndex, p) * omegaLevelSet;
+  }
+  if (EnergyTypeUsed[2])
+  {
+    killing_grad = computeKillingEnergyGradient(srcDisplacementField, spatialIndex) * omegaKilling;
+  }
 
   return data_grad + killing_grad + levelset_grad;
 }
