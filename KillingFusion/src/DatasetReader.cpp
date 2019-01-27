@@ -56,11 +56,14 @@ std::vector<cv::Mat> DatasetReader::getImages(int frameIndex)
   std::string depthFile = m_imageDir + "/depth_" + suffix + ".png";
   std::string omaskFile = m_imageDir + "/omask_" + suffix + ".png";
 
-  std::vector<cv::Mat> cdoImages;
-  cdoImages.push_back(cv::imread(colorFile));
-  cdoImages.push_back(readDepthImage(depthFile));
-  cdoImages.push_back(cv::imread(omaskFile, cv::IMREAD_GRAYSCALE));
-  return cdoImages;
+  std::vector<cv::Mat> cdImages;
+  cdImages.push_back(cv::imread(colorFile));
+  cv::Mat depthImage = readDepthImage(depthFile);
+  cv::Mat mask = cv::imread(omaskFile, cv::IMREAD_GRAYSCALE);
+  cv::Mat maskedDepthImage;
+  depthImage.copyTo(maskedDepthImage, mask);
+  cdImages.push_back(maskedDepthImage);
+  return cdImages;
 }
 
 int DatasetReader::getNumImageFiles() const
@@ -86,7 +89,6 @@ void DatasetReader::analyzeMinMaxDepthValues(const DEFORMABLE_DATASET dataset)
   {
     std::vector<cv::Mat> cdoImages = getImages(frameIndex);
     cv::Mat depthMat = cdoImages.at(1);
-    cv::Mat omaskMat = cdoImages.at(2);
     int H = depthMat.rows;
     int W = depthMat.cols;
     float min = std::numeric_limits<float>::max();
@@ -95,19 +97,15 @@ void DatasetReader::analyzeMinMaxDepthValues(const DEFORMABLE_DATASET dataset)
     {
       for (int c = 0; c < W; ++c)
       {
-        uchar isForegroundPixel = omaskMat.at<uchar>(r, c);
-        if (isForegroundPixel != 0)
+        float depth = depthMat.at<float>(r, c);
+        // Ignore 0 values which represent invalid data
+        if (min > depth && depth > 0)
         {
-          float depth = depthMat.at<float>(r, c);
-          // Ignore 0 values which represent invalid data
-          if (min > depth && depth > 0)
-          {
-            min = depth;
-          }
-          if (max < depth)
-          {
-            max = depth;
-          }
+          min = depth;
+        }
+        if (max < depth)
+        {
+          max = depth;
         }
       }
     }

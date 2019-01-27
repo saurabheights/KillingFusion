@@ -22,6 +22,7 @@ public:
   ~DisplacementField();
 
   Eigen::Vector3f getDisplacementAt(const Eigen::Vector3i &spatialIndex) const;
+  
   Eigen::Vector3f getDisplacementAt(int x, int y, int z) const;
 
   /**

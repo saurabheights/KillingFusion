@@ -62,9 +62,28 @@ public:
   KillingFusion() = delete;
   KillingFusion(DatasetReader datasetReader);
   ~KillingFusion();
+
+  /**
+   * Performs fusion of all frames.
+   */
   void process();
+
+  /**
+   * Fuses one frame in the current canonincal model and returns 3 meshes. 
+   * First is of currentFrame SDF.
+   * Second is of deformed current frame SDF.
+   * Third is of new canonincal SDF.
+   */
   SimpleMesh *processNextFrame();
+
+  /**
+   * Test KillingFusion on two Sphere SDF
+   */
   void processTest(int testType);
+
+  /**
+   * Get the frame index on which processNextFrame works on, in its next call.
+   */
   int getCurrentFrameIndex()
   {
     return m_currFrameIndex;

@@ -124,7 +124,7 @@ SimpleMesh *KillingFusion::processNextFrame()
     delete currSdf;
     printf("%03d\t%0.6fs\t%0.6fs\t%0.6fs\n", m_currFrameIndex, sdfTime, killingTime, fuseTime);
   }
-  m_currFrameIndex+=2;
+  m_currFrameIndex += 2;
   return m_canonicalSdf->getMesh();
 }
 
@@ -178,7 +178,6 @@ SDF *KillingFusion::computeSDF(int frameIndex)
                      UnknownClipDistance);
   std::vector<cv::Mat> cdoImages = m_datasetReader.getImages(frameIndex);
   sdf->integrateDepthFrame(cdoImages.at(1),
-                           cdoImages.at(2),
                            Eigen::Matrix4f::Identity(),
                            m_datasetReader.getDepthIntrinsicMatrix(),
                            minDepth,

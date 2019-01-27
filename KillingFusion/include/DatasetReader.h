@@ -29,6 +29,9 @@ public:
 
   DatasetReader(const std::string DatasetRootDir);
 
+  /**
+   * Returns color and depth image at frameIndex. Depth Image are masked using Deformable Dataset Mask.
+   */
   std::vector<cv::Mat> getImages(int frameIndex);
 
   int getNumImageFiles() const;

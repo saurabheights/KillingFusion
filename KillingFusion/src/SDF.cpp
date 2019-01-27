@@ -134,7 +134,6 @@ void SDF::allocateMemoryForSDF()
 }
 
 void SDF::integrateDepthFrame(cv::Mat depthFrame,
-                              cv::Mat maskFrame,
                               Eigen::Matrix4f depthFrameC2WPose,
                               Eigen::Matrix3f depthIntrinsicMatrix,
                               float minDepth,
@@ -170,10 +169,6 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
 
                 int row = roundf(voxelPixelLocation(1) + 0.5f);
                 if (row < 0 || row >= depthFrame.rows)
-                    continue;
-
-                uchar isForegroundPixel = maskFrame.at<uchar>(row, col);
-                if (isForegroundPixel == 0)
                     continue;
 
                 // If depth image is valid at the pixel
