@@ -88,6 +88,27 @@ class SimpleMesh
         return m_triangles;
     }
 
+    Eigen::Vector3f getMinLoc()
+    {
+        Eigen::Vector3f minLoc = m_vertices[0];
+        for (auto &&vertex : m_vertices)
+        {
+            minLoc = minLoc.cwiseMin(vertex);
+        }
+        return minLoc;
+    }
+    
+    Eigen::Vector3f getMaxLoc()
+    {
+        
+        Eigen::Vector3f maxLoc = m_vertices[0];
+        for(auto&& vertex : m_vertices)
+        {
+            maxLoc = maxLoc.cwiseMax(vertex);
+        }
+        return maxLoc;
+    }
+
     bool WriteMesh(const std::string &filename)
     {
         // Write off file
