@@ -8,6 +8,7 @@
 #include "config.h"
 #include "SimpleMesh.h"
 #include "MarchingCubes.h"
+#include "utils.h"
 using namespace std;
 
 SDF::SDF(float _voxelSize,
@@ -177,6 +178,7 @@ void SDF::integrateDepthFrame(cv::Mat depthFrame,
                 if (depth < minDepth || depth > maxDepth)
                     continue;
 
+                // Distance from surface
                 float dist = depth - voxelCenterDepth;
 
                 // Check if diff is too negative: m_unknownClipDistance
@@ -373,6 +375,7 @@ SimpleMesh* SDF::getMesh() const
             for (int x = 0; x < m_gridSize(0); x++)
             {
                 float distance = getDistanceAtIndex(x, y, z);
+                // if (distance > MaxSurfaceVoxelDistance || distance < -MaxSurfaceVoxelDistance)
                 if (distance > 3 * m_voxelSize || distance < -3 * m_voxelSize)
                     continue;
                 ProcessVolumeCell(x, y, z, 0.00f, mesh);
@@ -426,28 +429,6 @@ void SDF::dumpToBinFile(string outputFilePath,
     cout << "Minimum SDF value is " << min << " and max value is " << max << "\n";
     cout << "TSDF voxel grid values saved at " << outputFilePath << "\n";
     cout << "============================================================================\n";
-}
-
-//  ToDo - Move to utils
-float interpolate1D(float v_0, float v_1, float x)
-{
-    return v_0 * (1 - x) + v_1 * x;
-}
-
-float interpolate2D(float v_00, float v_01, float v_10, float v_11, float x, float y)
-{
-    float s = interpolate1D(v_00, v_01, x);
-    float t = interpolate1D(v_10, v_11, x);
-    return interpolate1D(s, t, y);
-}
-
-float interpolate3D(float v_000, float v_001, float v_010, float v_011,
-                    float v_100, float v_101, float v_110, float v_111,
-                    float x, float y, float z)
-{
-    float s = interpolate2D(v_000, v_001, v_010, v_011, x, y);
-    float t = interpolate2D(v_100, v_101, v_110, v_111, x, y);
-    return interpolate1D(s, t, z);
 }
 
 bool SDF::indexInGridBounds(int x, int y, int z) const

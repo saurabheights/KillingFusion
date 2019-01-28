@@ -51,6 +51,7 @@ include_directories(${PROJECT_SOURCE_DIR}/OpenGlMath)
 
 set(HEADER_FILES
         include/config.h
+        include/utils.h
         include/Timer.h
         include/DatasetReader.h
         include/KillingFusion.h

@@ -17,6 +17,8 @@
 // Screenshot of drawn mesh
 #include "FreeImage.h"
 
+#include <opencv2/core/utils/filesystem.hpp>
+
 static void reshape(int width, int height)
 {
   // Set the viewport to cover the new window
@@ -151,6 +153,7 @@ void displayText(int x, int y, int r, int g, int b, int screenWidth, int screenH
 
 DatasetReader *datasetReader;
 KillingFusion *fusion;
+std::string outputDirPath;
 
 static void draw()
 {
@@ -173,12 +176,10 @@ static void draw()
   std::vector<cv::Mat> colorDepthImageVec = datasetReader->getImages(currentFrameIndex);
 
   // Resize to 1/3 of screen width, 1/2 of screen height-Text
-  int TextHeight = 40; // In Pixels - ToDo - Improve this.
-  std::cout << screenWidth << std::endl;
+  int TextHeight = 40; // In Pixels
   int elementWidth = screenWidth / 3;
   int elementHeight = screenHeight / 2 - TextHeight;
   cv::Mat colorResizedImage = resizeKeepAspectRatio(colorDepthImageVec[0], cv::Size(elementWidth, elementHeight), cv::Scalar(0, 0, 0));
-  std::cout << elementWidth << " " << elementHeight << " " << colorResizedImage.size() << std::endl;
   cv::Mat depthResizedImage = resizeKeepAspectRatio(colorDepthImageVec[1], cv::Size(elementWidth, elementHeight), cv::Scalar(0, 0, 0));
 
   // Render Image in proper viewport and the text
@@ -265,15 +266,7 @@ static void draw()
   FIBITMAP *image = FreeImage_ConvertFromRawBits(pixels, screenWidth, screenHeight, 3 * screenWidth, 24, 0x0000FF, 0xFF0000, 0x00FF00, false);
 
   std::stringstream filenameStream;
-  filenameStream << OUTPUT_DIR << outputDir[datasetType] << std::setfill('0') << std::setw(3) << std::to_string(currentFrameIndex)
-                 << "_Data-" << EnergyTypeUsed[0]
-                 << "_LS-" << EnergyTypeUsed[1] << "_omegaLS-" << omegaLevelSet
-                 << "_KVF-" << EnergyTypeUsed[2] << "_omegaK-" << omegaKilling << "_gammaK-" << gammaKilling
-                 << "_Fuse-" << (FUSE_BY_MERGE ? "Merge" : "Math")
-                 << "_VoxelSize-" << VoxelSize
-                 << "_UnknownClipDist-" << UnknownClipDistance
-                 << "_MaxSurfaceVoxelDist-" << MaxSurfaceVoxelDistance
-                 << ".png";
+  filenameStream << outputDirPath << std::setfill('0') << std::setw(3) << std::to_string(currentFrameIndex) << ".png";
   FreeImage_Save(FIF_PNG, image, filenameStream.str().c_str(), 0);
   FreeImage_Unload(image);
   delete[] pixels;
@@ -291,13 +284,29 @@ int main(int argc, char **argv)
   datasetReader = new DatasetReader(DATA_DIR);
   fusion = new KillingFusion(*datasetReader);
 
+  // Create output directory to save screenshot
+  std::stringstream outputDirectoryStream;
+  outputDirectoryStream << OUTPUT_DIR << outputDir[datasetType]
+                 << "Data-" << EnergyTypeUsed[0]
+                 << "_LS-" << EnergyTypeUsed[1] << "_omegaLS-" << omegaLevelSet
+                 << "_KVF-" << EnergyTypeUsed[2] << "_omegaK-" << omegaKilling << "_gammaK-" << gammaKilling
+                 << "_Fuse-" << (FUSE_BY_MERGE ? "Merge" : "Math")
+                 << "_VoxelSize-" << VoxelSize
+                 << "_UnknownClipDist-" << UnknownClipDistance
+                 << "_MaxSurfaceVoxelDist-" << MaxSurfaceVoxelDistance
+                 << "_Iter-" << KILLING_MAX_ITERATIONS
+                 << "_alpha-" << alpha 
+                 << '/';
+  outputDirPath = outputDirectoryStream.str();
+  cv::utils::fs::createDirectory(outputDirPath);
+
   glutInit(&argc, argv);
 
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
   glutCreateWindow("KillingFusion");
 
   // register glut call backs
-  // glutReshapeFunc(reshape);
+  glutReshapeFunc(reshape); // Using FullScreen
   glFinish(); // First go full screen
   glutDisplayFunc(draw);
   initGL(1920, 1080);
