@@ -106,7 +106,8 @@ vector<SimpleMesh *> KillingFusion::processNextFrame()
   else if (m_currFrameIndex < m_endFrame)
   {
     Timer totalTimer, timer;
-    cout << "Iter   Compute SDF    KillingOptimize    Fuse SDF\n";
+    totalTimer.reset();
+    cout << "Iter   Compute SDF    KillingOptimize    Fuse SDF    Total Time\n";
     timer.reset();
     // Convert current frame to SDF - currSdf
     SDF *currSdf = computeSDF(m_currFrameIndex);
@@ -131,7 +132,8 @@ vector<SimpleMesh *> KillingFusion::processNextFrame()
     currentSdfMesh = currSdf->getMesh();
     currentFrameRegisteredSdfMesh = currSdf->getMesh(*m_prev2CanDisplacementField);
     delete currSdf;
-    printf("%03d\t%0.6fs\t%0.6fs\t%0.6fs\n", m_currFrameIndex, sdfTime, killingTime, fuseTime);
+    double totalTime = totalTimer.elapsed();
+    printf("%03d\t%0.6fs\t%0.6fs\t%0.6fs\t%0.6fs\n", m_currFrameIndex, sdfTime, killingTime, fuseTime, totalTime);
     m_currFrameIndex += 2;
   }
   canonicalMesh = m_canonicalSdf->getMesh();
