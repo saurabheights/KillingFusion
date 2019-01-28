@@ -44,19 +44,16 @@ class KillingFusion
   Eigen::Vector3f computeEnergyGradient(const SDF *src,
                                         const SDF *dest,
                                         const DisplacementField *srcDisplacementField,
-                                        const Eigen::Vector3i &spatialIndex,
-                                        const Eigen::Vector3f &p);
+                                        const Eigen::Vector3i &spatialIndex);
   Eigen::Vector3f computeDataEnergyGradient(const SDF *src,
                                             const SDF *dest,
                                             const DisplacementField *srcDisplacementField,
-                                            const Eigen::Vector3i &spatialIndex,
-                                            const Eigen::Vector3f &p);
+                                            const Eigen::Vector3i &spatialIndex);
   Eigen::Vector3f computeKillingEnergyGradient(const DisplacementField *srcDisplacementField,
                                                const Eigen::Vector3i &spatialIndex);
   Eigen::Vector3f computeLevelSetEnergyGradient(const SDF *src,
                                                 const DisplacementField *srcDisplacementField,
-                                                const Eigen::Vector3i &spatialIndex,
-                                                const Eigen::Vector3f &p);
+                                                const Eigen::Vector3i &spatialIndex);
 
 public:
   KillingFusion() = delete;

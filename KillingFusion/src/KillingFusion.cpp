@@ -115,7 +115,17 @@ vector<SimpleMesh *> KillingFusion::processNextFrame()
 
     // Future Task - Implement SDF-2-SDF to register currSDF to prevSDF
     // Future Task - ToDo - DisplacementField should have same shape as their SDF.
-    DisplacementField *curr2CanDisplacementField = m_prev2CanDisplacementField;
+    DisplacementField *curr2CanDisplacementField;
+    bool StartWithZeroDeformationField = true;
+    if (StartWithZeroDeformationField)
+    {
+      delete m_prev2CanDisplacementField;
+      curr2CanDisplacementField = createZeroDisplacementField(*currSdf);
+    }
+    else
+    {
+      curr2CanDisplacementField = m_prev2CanDisplacementField;
+    }
 
     timer.reset();
     // Compute Deformation Field for current frame SDF to merge with m_canonicalSdf
@@ -124,13 +134,14 @@ vector<SimpleMesh *> KillingFusion::processNextFrame()
 
     timer.reset();
     // Merge the m_currSdf to m_canonicalSdf using m_currSdf displacement field.
-    m_canonicalSdf->fuse(currSdf, curr2CanDisplacementField);
+    currentSdfMesh = currSdf->getMesh();
+    currSdf->update(curr2CanDisplacementField);
+    m_canonicalSdf->fuse(currSdf);
+    currentFrameRegisteredSdfMesh = currSdf->getMesh();
     double fuseTime = timer.elapsed();
 
     // ToDo - How to Save Live Canonical SDF registered towards CurrentFrame
     m_prev2CanDisplacementField = curr2CanDisplacementField;
-    currentSdfMesh = currSdf->getMesh();
-    currentFrameRegisteredSdfMesh = currSdf->getMesh(*m_prev2CanDisplacementField);
     delete currSdf;
     double totalTime = totalTimer.elapsed();
     printf("%03d\t%0.6fs\t%0.6fs\t%0.6fs\t%0.6fs\n", m_currFrameIndex, sdfTime, killingTime, fuseTime, totalTime);
@@ -181,7 +192,6 @@ SDF *KillingFusion::computeSDF(int frameIndex)
   // This will cause issue. SDF of Different Frames will be of different size.
   // This will cause deformation field to be of different size.
   // You then cannot simply set curr2PrevDisplacementField = prev2CanDisplacementField
-  // cout << "Computing SDF of frame " << frameIndex << endl;
   int w = m_datasetReader.getDepthWidth();
   int h = m_datasetReader.getDepthHeight();
   float minDepth = m_datasetReader.getMinimumDepthThreshold();
@@ -214,7 +224,7 @@ void KillingFusion::computeDisplacementField(const SDF *src,
   // Process at each voxel location
   Eigen::Vector3i srcGridSize = src->getGridSize();
 
-  // Compute gradient of src voxel displacement to move it toward destination voxel
+  // Make one update for each voxel at a time.
   for (size_t iter = 0; iter < KILLING_MAX_ITERATIONS; iter++)
   {
 #ifndef MY_DEBUG
@@ -228,74 +238,64 @@ void KillingFusion::computeDisplacementField(const SDF *src,
         {
           // Actual 3D Point on Desination Grid, where to optimize for.
           const Eigen::Vector3i spatialIndex(x, y, z);
-          const Eigen::Vector3f p = (spatialIndex.array().cast<float>() + 0.5f);
 
           // Check if srcGridLocation is near the Surface.
-          Eigen::Vector3f srcGridLocation = p + srcToDest->getDisplacementAt(spatialIndex);
-          float srcSdfDistance = src->getDistance(srcGridLocation);
-          if (fabs(srcSdfDistance) > MaxSurfaceVoxelDistance ||
-              fabs(srcSdfDistance) < -UnknownClipDistance)
-          {
+          float srcSdfDistance = src->getDistance(spatialIndex, srcToDest);
+          if (srcSdfDistance > MaxSurfaceVoxelDistance || srcSdfDistance < -UnknownClipDistance)
             continue;
-          }
 
 #ifdef MY_DEBUG
           float origSrcSdfDistance = srcSdfDistance;
           cout << x << "," << y << ", " << z << endl;
           cout << "OrigDist|       Src Dist        |   Dest dist   |                  Delta Change              | New Displacement \n";
           const Eigen::IOFormat fmt(4, 0, "\t", " ", "", "", "", "");
+          float destSdfDistance = dest->getDistanceAtIndex(spatialIndex);
 #endif
 
           // Optimize All Energies between Source Grid and Desination Grid
-          Eigen::Vector3f gradient = computeEnergyGradient(src, dest, srcToDest, spatialIndex, p);
-          float destSdfDistance = dest->getDistanceAtIndex(spatialIndex);
-          float _alpha = alpha;
-          Eigen::Vector3f displacementUpdate = -_alpha * gradient;
-//           // Trust Region Strategy
-//           float _alpha = alpha;
-//           bool lossDecreased = false;
-//           do
-//           {
-//             displacementUpdate = -_alpha * gradient;
-//             float prevSrcSdfDistance = src->getDistance(p + srcToDest->getDisplacementAt(spatialIndex));
-//             srcGridLocation = p + srcToDest->getDisplacementAt(spatialIndex) + displacementUpdate;
-//             srcSdfDistance = src->getDistance(srcGridLocation);
-//             float sdfDistanceConverged = fabs(srcSdfDistance - destSdfDistance) - fabs(prevSrcSdfDistance - destSdfDistance);
-//             if (sdfDistanceConverged > 0)
-//             {
-//               _alpha /= 1.5;
-// #ifdef MY_DEBUG
-//               cout << "Changed alpha to " << _alpha << endl;
-// #endif
-//             }
-//             else
-//             {
-//               lossDecreased = true;
-//             }
-//             // abs(src->getDistance(srcToDest->getDisplacementAt(spatialIndex) + p - (_alpha * gradient)) - destSdfDistance) > abs(srcSdfDistance - destSdfDistance)
-//           } while (!lossDecreased && _alpha > 1e-7);
-//           if (_alpha < 1e-7)
-//             break;
+          Eigen::Vector3f gradient = computeEnergyGradient(src, dest, srcToDest, spatialIndex);
+          Eigen::Vector3f displacementUpdate = -alpha * gradient / VoxelSize;
+
+          // Trust Region Strategy - Valid only when Data Energy is used.
+          if (EnergyTypeUsed[0] && !EnergyTypeUsed[1] && !EnergyTypeUsed[2])
+          {
+            float _alpha = alpha;
+            bool lossDecreased = false;
+            float destSdfDistance = dest->getDistanceAtIndex(spatialIndex);
+            float prevSrcSdfDistance = src->getDistance(spatialIndex, srcToDest);
+            do
+            {
+              srcSdfDistance = src->getDistance(spatialIndex.cast<float>() + srcToDest->getDisplacementAt(spatialIndex) + displacementUpdate + Eigen::Vector3f(0.5, 0.5, 0.5));
+              float sdfDistanceConverged = fabs(srcSdfDistance - destSdfDistance) - fabs(prevSrcSdfDistance - destSdfDistance);
+              if (sdfDistanceConverged > 0)
+              {
+                _alpha /= 1.5;
+#ifdef MY_DEBUG
+                cout << "Changed alpha to " << _alpha << endl;
+#endif
+                displacementUpdate = -_alpha * gradient / VoxelSize;
+              }
+              else
+              {
+                lossDecreased = true;
+              }
+            } while (!lossDecreased && _alpha > 1e-7);
+            if (_alpha < 1e-7)
+              break;
+          }
 
           srcToDest->update(spatialIndex, displacementUpdate);
 
 #ifdef MY_DEBUG
-          srcGridLocation = p + srcToDest->getDisplacementAt(spatialIndex);
-          srcSdfDistance = src->getDistance(srcGridLocation);
+          srcSdfDistance = src->getDistance(spatialIndex, srcToDest);
           cout << origSrcSdfDistance << "\t|\t" << srcSdfDistance << "\t|\t" << destSdfDistance << "\t|\t"
                << displacementUpdate.transpose().format(fmt) << "\t|\t" << srcToDest->getDisplacementAt(spatialIndex).transpose().format(fmt) << "\n";
 #endif
 
-          // if (displacementUpdate.norm() < threshold) // Here you forgot that displacementUpdate is in Voxel Size and threshold is in meter
-          //   break;
-
-          if (fabs(srcSdfDistance - destSdfDistance) < threshold)
-            break;
-
           // perform check on deformation field to see if it has diverged. Ideally shouldn't happen
           if (!srcToDest->getDisplacementAt(spatialIndex).array().isFinite().all())
           {
-            std::cout << "Error: deformation field has diverged: " << srcToDest->getDisplacementAt(spatialIndex) << " at: " << p << std::endl;
+            std::cout << "Error: deformation field has diverged: " << srcToDest->getDisplacementAt(spatialIndex) << " at: " << spatialIndex << std::endl;
             throw - 1;
           }
 
@@ -316,18 +316,19 @@ void KillingFusion::computeDisplacementField(const SDF *src,
 Eigen::Vector3f KillingFusion::computeEnergyGradient(const SDF *src,
                                                      const SDF *dest,
                                                      const DisplacementField *srcDisplacementField,
-                                                     const Eigen::Vector3i &spatialIndex,
-                                                     const Eigen::Vector3f &p)
+                                                     const Eigen::Vector3i &spatialIndex)
 {
   Eigen::Vector3f data_grad(0, 0, 0), levelset_grad(0, 0, 0), killing_grad(0, 0, 0);
 
   if (EnergyTypeUsed[0])
   {
-    data_grad = computeDataEnergyGradient(src, dest, srcDisplacementField, spatialIndex, p);
+    data_grad = computeDataEnergyGradient(src, dest, srcDisplacementField, spatialIndex);
+    // if (data_grad.norm() > 1)
+    //   data_grad.normalize();
   }
   if (EnergyTypeUsed[1])
   {
-    levelset_grad = computeLevelSetEnergyGradient(src, srcDisplacementField, spatialIndex, p) * omegaLevelSet;
+    levelset_grad = computeLevelSetEnergyGradient(src, srcDisplacementField, spatialIndex) * omegaLevelSet;
   }
   if (EnergyTypeUsed[2])
   {
@@ -340,14 +341,10 @@ Eigen::Vector3f KillingFusion::computeEnergyGradient(const SDF *src,
 Eigen::Vector3f KillingFusion::computeDataEnergyGradient(const SDF *src,
                                                          const SDF *dest,
                                                          const DisplacementField *srcDisplacementField,
-                                                         const Eigen::Vector3i &spatialIndex,
-                                                         const Eigen::Vector3f &p)
+                                                         const Eigen::Vector3i &spatialIndex)
 {
-  // Compute first distance gradient. How the distance changes at a given location p
-  Eigen::Vector3f displacedLocation = srcDisplacementField->getDisplacementAt(spatialIndex);
-  Eigen::Vector3f srcGridLocation = p + displacedLocation;
-  Eigen::Vector3f srcPointDistanceGradient = src->computeDistanceGradient(srcGridLocation);
-  float srcPointDistance = src->getDistance(srcGridLocation);
+  Eigen::Vector3f srcPointDistanceGradient = src->computeDistanceGradient(spatialIndex, srcDisplacementField);
+  float srcPointDistance = src->getDistance(spatialIndex, srcDisplacementField);
   float destPointDistance = dest->getDistanceAtIndex(spatialIndex);
   return (srcPointDistance - destPointDistance) * srcPointDistanceGradient.array();
 }
@@ -361,17 +358,13 @@ Eigen::Vector3f KillingFusion::computeKillingEnergyGradient(const DisplacementFi
 
 Eigen::Vector3f KillingFusion::computeLevelSetEnergyGradient(const SDF *src,
                                                              const DisplacementField *srcDisplacementField,
-                                                             const Eigen::Vector3i &spatialIndex,
-                                                             const Eigen::Vector3f &p)
+                                                             const Eigen::Vector3i &spatialIndex)
 {
-  Eigen::Vector3f displacedLocation = srcDisplacementField->getDisplacementAt(spatialIndex);
-  Eigen::Vector3f srcGridLocation = p + displacedLocation;
-
   // Compute first distance gradient.and hessian
-  Eigen::Vector3f grad = src->computeDistanceGradient(srcGridLocation);
+  Eigen::Vector3f grad = src->computeDistanceGradient(spatialIndex, srcDisplacementField);
 
   // Compute Hessian
-  Eigen::Matrix3f hessian = src->computeDistanceHessian(srcGridLocation);
+  Eigen::Matrix3f hessian = src->computeDistanceHessian(spatialIndex, srcDisplacementField);
 
   return hessian * grad * (grad.norm() - 1) / (grad.norm() + epsilon);
 }

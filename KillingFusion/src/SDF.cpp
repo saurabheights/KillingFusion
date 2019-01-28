@@ -529,6 +529,13 @@ float SDF::getDistance(const Eigen::Vector3f &gridLocation) const
                          interpolationWeights(0), interpolationWeights(1), interpolationWeights(2));
 }
 
+float SDF::getDistance(const Eigen::Vector3i &spatialIndex,
+                       const DisplacementField *displacementField) const
+{
+    Eigen::Vector3f displacedGridLocation = spatialIndex.cast<float>() + displacementField->getDisplacementAt(spatialIndex) + Eigen::Vector3f(0.5, 0.5, 0.5);
+    return getDistance(displacedGridLocation);
+}
+
 float SDF::getWeight(const Eigen::Vector3f &gridLocation) const
 {
     // Substract 0.5f since, grid index (x,y,z) stores weight value for center (x,y,z)+(0.5,0.5,0.5)
@@ -549,6 +556,13 @@ float SDF::getWeight(const Eigen::Vector3f &gridLocation) const
     return interpolate3D(vertex_000, vertex_001, vertex_010, vertex_011,
                          vertex_100, vertex_101, vertex_110, vertex_111,
                          interpolationWeights(0), interpolationWeights(1), interpolationWeights(2));
+}
+
+float SDF::getWeight(const Eigen::Vector3i &spatialIndex,
+                     const DisplacementField *displacementField) const
+{
+    Eigen::Vector3f displacedGridLocation = spatialIndex.cast<float>() + displacementField->getDisplacementAt(spatialIndex) + Eigen::Vector3f(0.5, 0.5, 0.5);
+    return getWeight(displacedGridLocation);
 }
 
 Eigen::Vector3f SDF::computeDistanceGradient(const Eigen::Vector3f &gridLocation) const
@@ -572,6 +586,25 @@ Eigen::Vector3f SDF::computeDistanceGradient(const Eigen::Vector3f &gridLocation
                   getDistance(gridLocation - forwardDiffDelta[1]);
     gradient(2) = getDistance(gridLocation + forwardDiffDelta[2]) -
                   getDistance(gridLocation - forwardDiffDelta[2]);
+
+    return gradient / (2 * m_voxelSize);
+}
+
+Eigen::Vector3f SDF::computeDistanceGradient(const Eigen::Vector3i &spatialIndex,
+                                             const DisplacementField *displacementField) const
+{
+    const Eigen::Vector3i forwardDiffDelta[3] = {Eigen::Vector3i(1, 0, 0),
+                                                 Eigen::Vector3i(0, 1, 0),
+                                                 Eigen::Vector3i(0, 0, 1)};
+
+    Eigen::Vector3f gradient(0, 0, 0);
+    // getDistance will take care of substracting 0.5, so pass gridLocation below
+    gradient(0) = getDistance(spatialIndex + forwardDiffDelta[0], displacementField) -
+                  getDistance(spatialIndex - forwardDiffDelta[0], displacementField);
+    gradient(1) = getDistance(spatialIndex + forwardDiffDelta[1], displacementField) -
+                  getDistance(spatialIndex - forwardDiffDelta[1], displacementField);
+    gradient(2) = getDistance(spatialIndex + forwardDiffDelta[2], displacementField) -
+                  getDistance(spatialIndex - forwardDiffDelta[2], displacementField);
 
     return gradient / (2 * m_voxelSize);
 }
@@ -605,6 +638,49 @@ Eigen::Matrix3f SDF::computeDistanceHessian(const Eigen::Vector3f &gridLocation)
     float fxyplus1zminus1 = getDistance(gridLocation + Eigen::Vector3f(0, 1, -1));
     float fxminus1yminus1z = getDistance(gridLocation + Eigen::Vector3f(-1, -1, 0));
     float fxplus1yminus1z = getDistance(gridLocation + Eigen::Vector3f(1, -1, 0));
+
+    float fxx, fyy, fzz, fxy, fxz, fyz;
+    float denominator = (4 * m_voxelSize * m_voxelSize); // 4h^2, where h is step size.
+    fxx = (fxplus2yz - 2 * fxyz + fxminus2yz);
+    fyy = (fxyplus2z - 2 * fxyz + fxyminus2z);
+    fyy = (fxyzplus2 - 2 * fxyz + fxyzminus2);
+    fxz = (fxplus1yzplus1 + fxminus1yzminus1 - fxplus1yzminus1 - fxminus1yzplus1);
+    fyz = (fxyplus1zplus1 + fxyminus1zminus1 - fxyplus1zminus1 - fxyminus1zplus1);
+    fxy = (fxplus1yplus1z + fxminus1yminus1z - fxplus1yminus1z - fxminus1yplus1z);
+
+    Eigen::Matrix3f hessian;
+    hessian(0, 0) = fxx;
+    hessian(1, 1) = fyy;
+    hessian(2, 2) = fzz;
+    hessian(0, 1) = hessian(1, 0) = fxy;
+    hessian(0, 2) = hessian(2, 0) = fxz;
+    hessian(1, 2) = hessian(2, 1) = fyz;
+    return hessian / denominator;
+}
+
+Eigen::Matrix3f SDF::computeDistanceHessian(const Eigen::Vector3i &spatialIndex,
+                                            const DisplacementField *displacementField) const
+{
+    // ToDo: Optimize - Ideally compute Gradient for whole SDF grid and the hessian of whole SDF grid. Reduce the repeat computation
+    float fxyz = getDistance(spatialIndex + Eigen::Vector3i(0, 0, 0), displacementField);
+    float fxplus2yz = getDistance(spatialIndex + Eigen::Vector3i(2, 0, 0), displacementField);
+    float fxminus2yz = getDistance(spatialIndex + Eigen::Vector3i(-2, 0, 0), displacementField);
+    float fxyplus2z = getDistance(spatialIndex + Eigen::Vector3i(0, 2, 0), displacementField);
+    float fxyminus2z = getDistance(spatialIndex + Eigen::Vector3i(0, -2, 0), displacementField);
+    float fxyzplus2 = getDistance(spatialIndex + Eigen::Vector3i(0, 0, 2), displacementField);
+    float fxyzminus2 = getDistance(spatialIndex + Eigen::Vector3i(0, 0, -2), displacementField);
+    float fxplus1yzplus1 = getDistance(spatialIndex + Eigen::Vector3i(1, 0, 1), displacementField);
+    float fxminus1yzplus1 = getDistance(spatialIndex + Eigen::Vector3i(-1, 0, 1), displacementField);
+    float fxyplus1zplus1 = getDistance(spatialIndex + Eigen::Vector3i(0, 1, 1), displacementField);
+    float fxyminus1zplus1 = getDistance(spatialIndex + Eigen::Vector3i(0, -1, 1), displacementField);
+    float fxplus1yplus1z = getDistance(spatialIndex + Eigen::Vector3i(1, 1, 0), displacementField);
+    float fxminus1yplus1z = getDistance(spatialIndex + Eigen::Vector3i(-1, 1, 0), displacementField);
+    float fxminus1yzminus1 = getDistance(spatialIndex + Eigen::Vector3i(-1, 0, -1), displacementField);
+    float fxplus1yzminus1 = getDistance(spatialIndex + Eigen::Vector3i(1, 0, -1), displacementField);
+    float fxyminus1zminus1 = getDistance(spatialIndex + Eigen::Vector3i(0, -1, -1), displacementField);
+    float fxyplus1zminus1 = getDistance(spatialIndex + Eigen::Vector3i(0, 1, -1), displacementField);
+    float fxminus1yminus1z = getDistance(spatialIndex + Eigen::Vector3i(-1, -1, 0), displacementField);
+    float fxplus1yminus1z = getDistance(spatialIndex + Eigen::Vector3i(1, -1, 0), displacementField);
 
     float fxx, fyy, fzz, fxy, fxz, fyz;
     float denominator = (4 * m_voxelSize * m_voxelSize); // 4h^2, where h is step size.

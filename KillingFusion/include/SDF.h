@@ -22,7 +22,7 @@ class SDF
   // Makes notation much simpler as well as reduces the computation of indices.
   std::vector<float> m_voxelGridTSDF;
   std::vector<long> m_voxelGridWeight;
-  float m_voxelSize;
+  float m_voxelSize; // ToDo: Remove this m_voxelSize. Use directly from config.h
   Eigen::Vector3i m_gridSpacingPerAxis;
   Eigen::Vector3f m_bound;
   float m_unknownClipDistance;
@@ -82,11 +82,6 @@ public:
   float getDistanceAtIndex(int x, int y, int z) const;
 
   /**
-   * Get SDF distance value at grid location. Grid Location unit is voxel size.
-   */
-  float getDistance(const Eigen::Vector3f &gridLocation) const;
-
-  /**
    * Get SDF weight value at spatial index.
    */
   long getWeightAtIndex(const Eigen::Vector3i &gridSpatialIndex) const;
@@ -97,19 +92,39 @@ public:
   long getWeightAtIndex(int x, int y, int z) const;
 
   /**
+   * Get SDF distance value at grid location. Grid Location unit is voxel size.
+   */
+  float getDistance(const Eigen::Vector3f &gridLocation) const;
+
+  /**
+   * Get distance value at grid location of displaced SDF. Grid Location unit is voxel size.
+   */
+  float getDistance(const Eigen::Vector3i &spatialIndex,
+                    const DisplacementField *displacementField) const;
+
+  /**
+   * Get weight value at grid location of SDF. Grid Location unit is voxel size.
    * Get SDF weight value at grid location. Grid Location unit is voxel size.
    */
   float getWeight(const Eigen::Vector3f &gridLocation) const;
+  float getWeight(const Eigen::Vector3i &spatialIndex,
+                  const DisplacementField *displacementField) const;
 
   /**
    * This function computes distance gradient at any grid location. Grid Location unit is voxel size.
    */
   Eigen::Vector3f computeDistanceGradient(const Eigen::Vector3f &gridLocation) const;
 
+  Eigen::Vector3f computeDistanceGradient(const Eigen::Vector3i &spatialIndex,
+                                          const DisplacementField *displacementField) const;
+
   /**
    * This function computes distance hessian at any grid location. Grid Location unit is voxel size.
    */
   Eigen::Matrix3f computeDistanceHessian(const Eigen::Vector3f &gridLocation) const;
+
+  Eigen::Matrix3f computeDistanceHessian(const Eigen::Vector3i &spatialIndex,
+                                         const DisplacementField *displacementField) const;
 
   /**
    * Fuses otherSdf which should be of same size as this.
@@ -134,8 +149,8 @@ public:
   /**
    * Returns mesh of SDF using marching cubes algorithm.
    */
-  SimpleMesh* getMesh() const;
-  SimpleMesh* getMesh(const DisplacementField& displacementField) const;
+  SimpleMesh *getMesh() const;
+  SimpleMesh *getMesh(const DisplacementField &displacementField) const;
 
   /**
    * Dumps mesh of SDF with deformation field applied using marching cubes algorithm.
