@@ -122,6 +122,11 @@ public:
   void fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementField);
 
   /**
+   * This methods applies the displacement to the SDF.
+   */
+  void update(const DisplacementField *displacementField);
+
+  /**
    * Dumps mesh of SDF using marching cubes algorithm.
    */
   void save_mesh(std::string mesh_name_prefix, int fileCounter) const;
@@ -137,11 +142,13 @@ public:
    */
   void save_mesh(std::string mesh_name_prefix,
                  int fileCounter,
-                 const DisplacementField& displacementField) const;
+                 const DisplacementField &displacementField) const;
 
   /**
-   * Writes the SDF to a file
+   * Writes the SDF to a file.
    * @param outputFilePath
+   * @param truncationDistanceInVoxelSizeUnit - Not used
+   * @param minimumWeightThreshold - Not used
    */
   void dumpToBinFile(std::string outputFilePath,
                      float truncationDistanceInVoxelSizeUnit,

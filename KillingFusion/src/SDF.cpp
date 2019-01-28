@@ -206,9 +206,7 @@ void SDF::fuse(const SDF *otherSdf)
         long w2 = otherSdf->m_voxelGridWeight.at(voxelIndex);
         // Ignore voxels that are at distance -1 behind the surface in otherSDF. No change needed.
         if (w2 == 0)
-        {
             continue;
-        }
 
         long w1 = m_voxelGridWeight.at(voxelIndex);
         float dist2 = otherSdf->m_voxelGridTSDF.at(voxelIndex);
@@ -260,9 +258,7 @@ void SDF::fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementFi
                 // Ignore voxels that are at distance -1 behind the surface in otherSDF. No change needed.
                 // http://realtimecollisiondetection.net/blog/?p=89
                 if (fabs(w2) < 1e-5f) // Nearly Zero
-                {
-                    continue; // Make no change to this SDF.
-                }
+                    continue;         // Make no change to this voxel.
 
                 long w1 = getWeightAtIndex(x, y, z);
                 float dist2 = otherSdf->getDistance(otherSdfIndex);
@@ -297,6 +293,36 @@ void SDF::fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementFi
             }
         }
     }
+}
+
+void SDF::update(const DisplacementField *displacementField)
+{
+    std::vector<float> newVoxelGridTSDF;
+    std::vector<long> newVoxelGridWeight;
+    newVoxelGridTSDF.resize(m_totalNumberOfVoxels);
+    newVoxelGridWeight.resize(m_totalNumberOfVoxels);
+    std::fill(newVoxelGridTSDF.begin(), newVoxelGridTSDF.end(), 1.0f);
+    std::fill(newVoxelGridWeight.begin(), newVoxelGridWeight.end(), 0);
+
+    for (int z = 0; z < m_gridSize(2); z++)
+    {
+        for (int y = 0; y < m_gridSize(1); y++)
+        {
+            for (int x = 0; x < m_gridSize(0); x++)
+            {
+                Eigen::Vector3f sdfLocation = Eigen::Vector3f(x + 0.5f, y + 0.5f, z + 0.5f) + displacementField->getDisplacementAt(x, y, z);
+                float w = getWeight(sdfLocation);
+                float dist = getDistance(sdfLocation);
+                int voxelIndex = z * m_gridSpacingPerAxis(2) + y * m_gridSpacingPerAxis(1) + x;
+                newVoxelGridTSDF.at(voxelIndex) = dist;
+                newVoxelGridWeight.at(voxelIndex) = w;
+            }
+        }
+    }
+
+    // Swap the current SDF and weights with the new computed SDF and weights
+    m_voxelGridTSDF.swap(newVoxelGridTSDF);
+    m_voxelGridWeight.swap(newVoxelGridWeight);
 }
 
 bool SDF::ProcessVolumeCell(int x, int y, int z, double iso, SimpleMesh *mesh) const
@@ -356,7 +382,7 @@ void SDF::save_mesh(std::string mesh_name_prefix,
     filenameOutStream << OUTPUT_DIR << outputDir[datasetType] << mesh_name_prefix << std::setw(3) << std::setfill('0') << fileCounter << ".off";
     std::string filenameOut = filenameOutStream.str();
 
-    SimpleMesh* mesh = getMesh();
+    SimpleMesh *mesh = getMesh();
     // write mesh to file
     if (!mesh->WriteMesh(filenameOut))
     {
@@ -365,9 +391,9 @@ void SDF::save_mesh(std::string mesh_name_prefix,
     delete mesh;
 }
 
-SimpleMesh* SDF::getMesh() const
+SimpleMesh *SDF::getMesh() const
 {
-    SimpleMesh* mesh = new SimpleMesh();
+    SimpleMesh *mesh = new SimpleMesh();
     for (int z = 0; z < m_gridSize(2); z++)
     {
         for (int y = 0; y < m_gridSize(1); y++)
@@ -385,7 +411,7 @@ SimpleMesh* SDF::getMesh() const
     return mesh;
 }
 
-SimpleMesh* SDF::getMesh(const DisplacementField& displacementField) const
+SimpleMesh *SDF::getMesh(const DisplacementField &displacementField) const
 {
     SDF deformedSdf(m_voxelSize, m_min3dLoc, m_max3dLoc, m_unknownClipDistance);
     deformedSdf.fuse(this, &displacementField);
@@ -394,7 +420,7 @@ SimpleMesh* SDF::getMesh(const DisplacementField& displacementField) const
 
 void SDF::save_mesh(std::string mesh_name_prefix,
                     int fileCounter,
-                    const DisplacementField& displacementField) const
+                    const DisplacementField &displacementField) const
 {
     SDF deformedSdf(m_voxelSize, m_min3dLoc, m_max3dLoc, m_unknownClipDistance);
     deformedSdf.fuse(this, &displacementField);
