@@ -8,10 +8,10 @@
 #include <string>
 
 // SDF Generation Parameters
-extern float VoxelSize;
-extern float UnknownClipDistance;
-extern float MaxSurfaceVoxelDistance;
-extern bool FUSE_BY_MERGE;
+const extern float VoxelSize;
+const extern float UnknownClipDistance;
+const extern float MaxSurfaceVoxelDistance;
+const extern bool FUSE_BY_MERGE;
 // Dataset and Pipeline to Use
 
 // ToDo: later add another layer of VariationalFusion between main and KillingFusion class and further
@@ -33,36 +33,36 @@ enum DEFORMABLE_DATASET
   SNOOPY = 1
 };
 
-extern DEFORMABLE_DATASET datasetType;
-extern int numImageFiles[2];
-extern std::string imageDir[2];
-extern std::string intrinsicParamsFile;
-extern float datasetDepthMinMaxValues[2][2];
-extern std::string outputDir[2];
+const extern DEFORMABLE_DATASET datasetType;
+const extern int numImageFiles[2];
+const extern std::string imageDir[2];
+const extern std::string intrinsicParamsFile;
+const extern float datasetDepthMinMaxValues[2][2];
+const extern std::string outputDir[2];
 
-extern const bool EnergyTypeUsed[3];
+const extern bool EnergyTypeUsed[3];
 
 /**
  * Killing Fusion Pipeline configuration
  */
-extern int KILLING_MAX_ITERATIONS;
+const extern int KILLING_MAX_ITERATIONS;
 
 // learning rates for gradient descent
-extern float alpha;
+const extern float alpha;
 
-// Convergence criterion - Stop when gradient < threshold  
-extern float threshold;
+// Convergence criterion - Stop when gradient < threshold
+const extern float threshold;
 
 // Killing condition weights
-extern float omegaKilling;
+const extern float omegaKilling;
 
 // Killing - Rigidity factor
-extern float gammaKilling;
+const extern float gammaKilling;
 
 // Level-set condition weights
-extern float omegaLevelSet;
+const extern float omegaLevelSet;
 
 // Level-set - Prevents division by zero
-extern float epsilon;
+const extern float epsilon;
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_CONFIG_H
