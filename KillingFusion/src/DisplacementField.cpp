@@ -37,6 +37,15 @@ void DisplacementField::update(const Eigen::Vector3i &spatialIndex,
     m_gridDisplacementValue.at(index) += deltaUpdate;
 }
 
+DisplacementField& DisplacementField::operator+(const DisplacementField& otherDisplacementField)
+{
+    for(size_t i = 0; i < m_gridSize.size(); i++)
+    {
+        this->m_gridDisplacementValue[i] += otherDisplacementField.m_gridDisplacementValue[i];
+    }
+    return *this;
+}
+
 Eigen::Matrix3f DisplacementField::computeJacobian(int x, int y, int z) const 
 {
     // Future Tasks:- Add boundary checks.

@@ -30,6 +30,8 @@ public:
    */
   void update(const Eigen::Vector3i& spatialIndex, const Eigen::Vector3f &deltaUpdate);
 
+  DisplacementField& operator+(const DisplacementField& otherDisplacementField);
+
   /**
    * Computes Jacobian of Displacement Field(3d Vector Field) with respect to x,y,z.
    **/
