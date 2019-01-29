@@ -66,8 +66,9 @@ set(SOURCE_FILES
         src/SDF.cpp
         src/DisplacementField.cpp)
 
-# To Check if in debug mode. Disables OpenMP
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DMY_DEBUG")
+# To Check if in debug mode. Disables OpenMP and printing a lot of Fusion Info.
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DMY_DEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDISABLE_OPENMP")
 
 ## Targets
 add_executable(KillingFusion src/main.cpp ${HEADER_FILES} ${SOURCE_FILES} )

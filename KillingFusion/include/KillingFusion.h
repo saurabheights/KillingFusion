@@ -16,6 +16,7 @@ class KillingFusion
   int m_startFrame;
   int m_endFrame;
   int m_currFrameIndex;
+  int m_stride;
   DisplacementField *m_prev2CanDisplacementField;
   ////////////////
 

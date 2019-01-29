@@ -24,6 +24,7 @@ KillingFusion::KillingFusion(DatasetReader datasetReader)
   cout << m_canonicalSdf->getGridSize().transpose() << endl;
   m_startFrame = 5;
   m_endFrame = 100;
+  m_stride = 1;
   m_currFrameIndex = m_startFrame;
   m_prev2CanDisplacementField = nullptr;
 }
@@ -101,7 +102,7 @@ vector<SimpleMesh *> KillingFusion::processNextFrame()
     m_prev2CanDisplacementField = createZeroDisplacementField(*m_canonicalSdf);
     currentSdfMesh = m_canonicalSdf->getMesh();
     currentFrameRegisteredSdfMesh = m_canonicalSdf->getMesh(*m_prev2CanDisplacementField);
-    m_currFrameIndex += 2;
+    m_currFrameIndex+=m_stride;
   }
   else if (m_currFrameIndex < m_endFrame)
   {
@@ -123,9 +124,7 @@ vector<SimpleMesh *> KillingFusion::processNextFrame()
       curr2CanDisplacementField = createZeroDisplacementField(*currSdf);
     }
     else
-    {
       curr2CanDisplacementField = m_prev2CanDisplacementField;
-    }
 
     timer.reset();
     // Compute Deformation Field for current frame SDF to merge with m_canonicalSdf
@@ -145,7 +144,7 @@ vector<SimpleMesh *> KillingFusion::processNextFrame()
     delete currSdf;
     double totalTime = totalTimer.elapsed();
     printf("%03d\t%0.6fs\t%0.6fs\t%0.6fs\t%0.6fs\n", m_currFrameIndex, sdfTime, killingTime, fuseTime, totalTime);
-    m_currFrameIndex += 2;
+    m_currFrameIndex+=m_stride;
   }
   canonicalMesh = m_canonicalSdf->getMesh();
   meshes.push_back(currentSdfMesh);
@@ -227,7 +226,7 @@ void KillingFusion::computeDisplacementField(const SDF *src,
   // Make one update for each voxel at a time.
   for (size_t iter = 0; iter < KILLING_MAX_ITERATIONS; iter++)
   {
-#ifndef MY_DEBUG
+#ifndef DISABLE_OPENMP
 #pragma omp parallel for schedule(dynamic)
 #endif
     for (int z = 0; z < srcGridSize(2); z++)
