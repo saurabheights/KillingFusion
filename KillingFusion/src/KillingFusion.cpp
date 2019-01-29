@@ -344,6 +344,8 @@ Eigen::Vector3f KillingFusion::computeDataEnergyGradient(const SDF *src,
                                                          const Eigen::Vector3i &spatialIndex)
 {
   Eigen::Vector3f srcPointDistanceGradient = src->computeDistanceGradient(spatialIndex, srcDisplacementField);
+  if(srcPointDistanceGradient.norm() > 0)
+    srcPointDistanceGradient.normalize(); // only direction is required
   float srcPointDistance = src->getDistance(spatialIndex, srcDisplacementField);
   float destPointDistance = dest->getDistanceAtIndex(spatialIndex);
   return (srcPointDistance - destPointDistance) * srcPointDistanceGradient.array();
