@@ -102,7 +102,7 @@ vector<SimpleMesh *> KillingFusion::processNextFrame()
     m_prev2CanDisplacementField = createZeroDisplacementField(*m_canonicalSdf);
     currentSdfMesh = m_canonicalSdf->getMesh();
     currentFrameRegisteredSdfMesh = m_canonicalSdf->getMesh(*m_prev2CanDisplacementField);
-    m_currFrameIndex+=m_stride;
+    m_currFrameIndex += m_stride;
   }
   else if (m_currFrameIndex < m_endFrame)
   {
@@ -117,8 +117,7 @@ vector<SimpleMesh *> KillingFusion::processNextFrame()
     // Future Task - Implement SDF-2-SDF to register currSDF to prevSDF
     // Future Task - ToDo - DisplacementField should have same shape as their SDF.
     DisplacementField *curr2CanDisplacementField;
-    bool StartWithZeroDeformationField = true;
-    if (StartWithZeroDeformationField)
+    if (UseZeroDisplacementFieldForNextFrame)
     {
       delete m_prev2CanDisplacementField;
       curr2CanDisplacementField = createZeroDisplacementField(*currSdf);
@@ -139,12 +138,12 @@ vector<SimpleMesh *> KillingFusion::processNextFrame()
     currentFrameRegisteredSdfMesh = currSdf->getMesh();
     double fuseTime = timer.elapsed();
 
-    // ToDo - How to Save Live Canonical SDF registered towards CurrentFrame
+    // ToDo - Save Live Canonical SDF registered towards CurrentFrame
     m_prev2CanDisplacementField = curr2CanDisplacementField;
     delete currSdf;
     double totalTime = totalTimer.elapsed();
     printf("%03d\t%0.6fs\t%0.6fs\t%0.6fs\t%0.6fs\n", m_currFrameIndex, sdfTime, killingTime, fuseTime, totalTime);
-    m_currFrameIndex+=m_stride;
+    m_currFrameIndex += m_stride;
   }
   canonicalMesh = m_canonicalSdf->getMesh();
   meshes.push_back(currentSdfMesh);
@@ -223,10 +222,111 @@ void KillingFusion::computeDisplacementField(const SDF *src,
   // Process at each voxel location
   Eigen::Vector3i srcGridSize = src->getGridSize();
 
-  // Make one update for each voxel at a time.
-  for (size_t iter = 0; iter < KILLING_MAX_ITERATIONS; iter++)
+  if (UpdateAllVoxelsInEachIter)
   {
+    // Make one update for each voxel at a time.
+    for (size_t iter = 0; iter < KILLING_MAX_ITERATIONS; iter++)
+    {
+      DisplacementField *currIterDeformation = nullptr;
+      if (UsePreviousIterationDeformationField)
+        currIterDeformation = createZeroDisplacementField(*src);
 #ifndef DISABLE_OPENMP
+#pragma omp parallel for schedule(dynamic)
+#endif
+      for (int z = 0; z < srcGridSize(2); z++)
+      {
+        for (int y = 0; y < srcGridSize(1); y++)
+        {
+          for (int x = 0; x < srcGridSize(0); x++)
+          {
+            // Actual 3D Point on Desination Grid, where to optimize for.
+            const Eigen::Vector3i spatialIndex(x, y, z);
+
+            // Check if srcGridLocation is near the Surface.
+            float srcSdfDistance = src->getDistance(spatialIndex, srcToDest);
+            if (srcSdfDistance > MaxSurfaceVoxelDistance || srcSdfDistance < -MaxSurfaceVoxelDistance)
+              continue;
+
+#ifdef MY_DEBUG
+            float origSrcSdfDistance = srcSdfDistance;
+            cout << x << "," << y << ", " << z << endl;
+            cout << "OrigDist|       Src Dist        |   Dest dist   |                  Delta Change              | New Displacement \n";
+            const Eigen::IOFormat fmt(4, 0, "\t", " ", "", "", "", "");
+            float destSdfDistance = dest->getDistanceAtIndex(spatialIndex);
+#endif
+
+            // Optimize All Energies between Source Grid and Desination Grid
+            Eigen::Vector3f gradient = computeEnergyGradient(src, dest, srcToDest, spatialIndex);
+            Eigen::Vector3f displacementUpdate = -alpha * gradient / VoxelSize;
+
+            // Trust Region Strategy - Valid only when Data Energy is used.
+            if (!EnergyTypeUsed[0] && !EnergyTypeUsed[1] && !EnergyTypeUsed[2])
+            {
+              float _alpha = alpha;
+              bool lossDecreased = false;
+              float destSdfDistance = dest->getDistanceAtIndex(spatialIndex);
+              float prevSrcSdfDistance = src->getDistance(spatialIndex, srcToDest);
+              do
+              {
+                srcSdfDistance = src->getDistance(spatialIndex.cast<float>() + srcToDest->getDisplacementAt(spatialIndex) + displacementUpdate + Eigen::Vector3f(0.5, 0.5, 0.5));
+                float sdfDistanceConverged = fabs(srcSdfDistance - destSdfDistance) - fabs(prevSrcSdfDistance - destSdfDistance);
+                if (sdfDistanceConverged > 0)
+                {
+                  _alpha /= 1.5;
+#ifdef MY_DEBUG
+                  cout << "Changed alpha to " << _alpha << endl;
+#endif
+                  displacementUpdate = -_alpha * gradient / VoxelSize;
+                }
+                else
+                {
+                  lossDecreased = true;
+                }
+              } while (!lossDecreased && _alpha > 1e-7);
+              if (_alpha < 1e-7)
+                break;
+            }
+
+            if (UsePreviousIterationDeformationField)
+              currIterDeformation->update(spatialIndex, displacementUpdate);
+            else
+              srcToDest->update(spatialIndex, displacementUpdate);
+
+#ifdef MY_DEBUG
+            srcSdfDistance = src->getDistance(spatialIndex, srcToDest);
+            cout << origSrcSdfDistance << "\t|\t" << srcSdfDistance << "\t|\t" << destSdfDistance << "\t|\t"
+                 << displacementUpdate.transpose().format(fmt) << "\t|\t" << srcToDest->getDisplacementAt(spatialIndex).transpose().format(fmt) << "\n";
+#endif
+
+            // perform check on deformation field to see if it has diverged. Ideally shouldn't happen
+            if (!srcToDest->getDisplacementAt(spatialIndex).array().isFinite().all())
+            {
+              std::cout << "Error: deformation field has diverged: " << srcToDest->getDisplacementAt(spatialIndex) << " at: " << spatialIndex << std::endl;
+              throw - 1;
+            }
+
+#ifdef MY_DEBUG
+            cout << "OrigDist|       Src Dist        |   Dest dist   |                  Delta Change              | New Displacement \n";
+            cout << origSrcSdfDistance << "\t|\t" << srcSdfDistance << "\t|\t" << destSdfDistance << "\t|\t"
+                 << displacementUpdate.transpose().format(fmt) << "\t|\t" << srcToDest->getDisplacementAt(spatialIndex).transpose().format(fmt) << "\n";
+            cout << x << "," << y << ", " << z << endl;
+            cout << endl;
+            char c;
+            cin >> c; // wait for user to read the inputs.
+#endif
+          }
+        }
+      }
+      if (UsePreviousIterationDeformationField)
+      {
+        *srcToDest = *srcToDest + *currIterDeformation;
+        delete currIterDeformation;
+      }
+    }
+  }
+  else
+  {
+#ifndef MY_DEBUG
 #pragma omp parallel for schedule(dynamic)
 #endif
     for (int z = 0; z < srcGridSize(2); z++)
@@ -240,72 +340,29 @@ void KillingFusion::computeDisplacementField(const SDF *src,
 
           // Check if srcGridLocation is near the Surface.
           float srcSdfDistance = src->getDistance(spatialIndex, srcToDest);
-          if (srcSdfDistance > MaxSurfaceVoxelDistance || srcSdfDistance < -UnknownClipDistance)
+          if (srcSdfDistance > MaxSurfaceVoxelDistance || srcSdfDistance < -MaxSurfaceVoxelDistance)
             continue;
 
-#ifdef MY_DEBUG
-          float origSrcSdfDistance = srcSdfDistance;
-          cout << x << "," << y << ", " << z << endl;
-          cout << "OrigDist|       Src Dist        |   Dest dist   |                  Delta Change              | New Displacement \n";
-          const Eigen::IOFormat fmt(4, 0, "\t", " ", "", "", "", "");
-          float destSdfDistance = dest->getDistanceAtIndex(spatialIndex);
-#endif
-
-          // Optimize All Energies between Source Grid and Desination Grid
-          Eigen::Vector3f gradient = computeEnergyGradient(src, dest, srcToDest, spatialIndex);
-          Eigen::Vector3f displacementUpdate = -alpha * gradient / VoxelSize;
-
-          // Trust Region Strategy - Valid only when Data Energy is used.
-          if (EnergyTypeUsed[0] && !EnergyTypeUsed[1] && !EnergyTypeUsed[2])
+          // Optimize Killing Energy between Source Grid and Desination Grid
+          Eigen::Vector3f gradient;
+          int iter = 0;
+          do
           {
-            float _alpha = alpha;
-            bool lossDecreased = false;
-            float destSdfDistance = dest->getDistanceAtIndex(spatialIndex);
-            float prevSrcSdfDistance = src->getDistance(spatialIndex, srcToDest);
-            do
-            {
-              srcSdfDistance = src->getDistance(spatialIndex.cast<float>() + srcToDest->getDisplacementAt(spatialIndex) + displacementUpdate + Eigen::Vector3f(0.5, 0.5, 0.5));
-              float sdfDistanceConverged = fabs(srcSdfDistance - destSdfDistance) - fabs(prevSrcSdfDistance - destSdfDistance);
-              if (sdfDistanceConverged > 0)
-              {
-                _alpha /= 1.5;
-#ifdef MY_DEBUG
-                cout << "Changed alpha to " << _alpha << endl;
-#endif
-                displacementUpdate = -_alpha * gradient / VoxelSize;
-              }
-              else
-              {
-                lossDecreased = true;
-              }
-            } while (!lossDecreased && _alpha > 1e-7);
-            if (_alpha < 1e-7)
+            gradient = computeEnergyGradient(src, dest, srcToDest, spatialIndex);
+            srcToDest->update(spatialIndex, -alpha * gradient / VoxelSize);
+
+            if (gradient.norm() <= threshold)
               break;
-          }
 
-          srcToDest->update(spatialIndex, displacementUpdate);
+            // perform check on deformation field to see if it has diverged. Ideally shouldn't happen
+            if (!srcToDest->getDisplacementAt(spatialIndex).array().isFinite().all())
+            {
+              std::cout << "Error: deformation field has diverged: " << srcToDest->getDisplacementAt(spatialIndex) << " at: " << spatialIndex << std::endl;
+              throw - 1;
+            }
 
-#ifdef MY_DEBUG
-          srcSdfDistance = src->getDistance(spatialIndex, srcToDest);
-          cout << origSrcSdfDistance << "\t|\t" << srcSdfDistance << "\t|\t" << destSdfDistance << "\t|\t"
-               << displacementUpdate.transpose().format(fmt) << "\t|\t" << srcToDest->getDisplacementAt(spatialIndex).transpose().format(fmt) << "\n";
-#endif
-
-          // perform check on deformation field to see if it has diverged. Ideally shouldn't happen
-          if (!srcToDest->getDisplacementAt(spatialIndex).array().isFinite().all())
-          {
-            std::cout << "Error: deformation field has diverged: " << srcToDest->getDisplacementAt(spatialIndex) << " at: " << spatialIndex << std::endl;
-            throw - 1;
-          }
-
-#ifdef MY_DEBUG
-          cout << "OrigDist|       Src Dist        |   Dest dist   |                  Delta Change              | New Displacement \n";
-          cout << origSrcSdfDistance << "\t|\t" << srcSdfDistance << "\t|\t" << destSdfDistance << "\t|\t"
-               << displacementUpdate.transpose().format(fmt) << "\t|\t" << srcToDest->getDisplacementAt(spatialIndex).transpose().format(fmt) << "\n";
-          cout << x << "," << y << ", " << z << endl;
-          cout << endl;
-          char c; cin >> c; // wait for user to read the inputs. 
-#endif
+            iter += 1;
+          } while (gradient.norm() > threshold && iter < KILLING_MAX_ITERATIONS);
         }
       }
     }

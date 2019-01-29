@@ -123,12 +123,11 @@ float DisplacementField::computeKillingEnergy(float x, float y, float z) const
 
     // Compute Damped Approximate Killing Vector Field
     float avkf = jacobianVec.dot(jacobianVec) + gammaKilling * jacobianTransposeVec.dot(jacobianVec);
-    return std::min(avkf, 2.0f * m_voxelSize);
+    return std::min(avkf, 20.0f * m_voxelSize); // Put this threshold to cutoff too high killing values in config.cpp
 }
 
 Eigen::Vector3f DisplacementField::computeKillingEnergyGradient(const Eigen::Vector3i &spatialIndex) const
 {
-    // ToDO: Correct boundary check.
     if ((spatialIndex.array() < 2 * deltaSize).any() || (spatialIndex.array() >= (m_gridSize.array() - 2 * deltaSize)).any())
         return Eigen::Vector3f::Zero();
 
