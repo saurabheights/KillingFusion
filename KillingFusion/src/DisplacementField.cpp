@@ -91,12 +91,12 @@ Eigen::Matrix3f DisplacementField::computeJacobian(float x, float y, float z) co
     // wx, wy, wz
     for (int i = 0; i < 3; i++) // Compute ux, vx,wx. Next, compute for y and last for z.
     {
-        displacementUVW[i][0] = getDisplacementAt(x + deltaLoc[i][0] * deltaSize,
-                                                  y + deltaLoc[i][1] * deltaSize,
-                                                  z + deltaLoc[i][2] * deltaSize);
-        displacementUVW[i][1] = getDisplacementAt(x - deltaLoc[i][0] * deltaSize,
-                                                  y - deltaLoc[i][1] * deltaSize,
-                                                  z - deltaLoc[i][2] * deltaSize);
+        displacementUVW[i][0] = getDisplacementAtf(Eigen::Vector3f(x + deltaLoc[i][0] * deltaSize,
+                                                                   y + deltaLoc[i][1] * deltaSize,
+                                                                   z + deltaLoc[i][2] * deltaSize));
+        displacementUVW[i][1] = getDisplacementAtf(Eigen::Vector3f(x - deltaLoc[i][0] * deltaSize,
+                                                                   y - deltaLoc[i][1] * deltaSize,
+                                                                   z - deltaLoc[i][2] * deltaSize));
         // For i=0
         // displacementUVW[i][0] - displacementUVW[i][1] gives how DisplacementField changes with 2 * deltaX
         // Thus, (displacementUVW[i][0] - displacementUVW[i][1])/2*deltaX, gives ux, vx, wx.
@@ -105,6 +105,35 @@ Eigen::Matrix3f DisplacementField::computeJacobian(float x, float y, float z) co
 
     jacobian /= 2 * deltaSize * m_voxelSize;
     return jacobian;
+}
+
+void DisplacementField::testJacobian()
+{
+    // Since interpolation is used in numerical differentiation, analytic function f to test should be linear
+    float voxelSize = 1;
+    DisplacementField testField(Eigen::Vector3i(8, 8, 8), voxelSize);
+    for (size_t x = 0; x < 5; x++)
+    {
+        for (size_t y = 0; y < 5; y++)
+        {
+            for (size_t z = 0; z < 5; z++)
+            {
+                // F(x,y,z) = (x+y, x+z, y+z)
+                float f1 = x + y + z;
+                float f2 = x + z;
+                float f3 = y + z;
+                testField.update(Eigen::Vector3i(x, y, z), Eigen::Vector3f(f1, f2, f3));
+            }
+        }
+    }
+    float x = 2, y = 2, z = 2;
+    Eigen::Matrix3f numericalJacobian = testField.computeJacobian(x, y, z);
+    cout << "numericalJacobian at 2,2,2 is \n"
+         << numericalJacobian << endl;
+    cout << "analyticalJacobian at 2,2,2 is \n"
+         << "1, 1, 1\n"
+         << "1, 0, 1\n"
+         << "0, 1, 1" << endl;
 }
 
 float DisplacementField::computeKillingEnergy(float x, float y, float z) const
@@ -124,6 +153,47 @@ float DisplacementField::computeKillingEnergy(float x, float y, float z) const
     // Compute Damped Approximate Killing Vector Field
     float avkf = jacobianVec.dot(jacobianVec) + gammaKilling * jacobianTransposeVec.dot(jacobianVec);
     return std::min(avkf, 20.0f * m_voxelSize); // Put this threshold to cutoff too high killing values in config.cpp
+}
+
+void DisplacementField::testKillingEnergy()
+{
+    // Since interpolation is used in numerical differentiation, analytic function f to test should be linear
+    float voxelSize = 1;
+    DisplacementField testField(Eigen::Vector3i(8, 8, 8), voxelSize);
+    for (size_t x = 0; x < 5; x++)
+    {
+        for (size_t y = 0; y < 5; y++)
+        {
+            for (size_t z = 0; z < 5; z++)
+            {
+                // F(x,y,z) = (x+y, x+z, y+z)
+                float f1 = x + y + z;
+                float f2 = x + z;
+                float f3 = y;
+                testField.update(Eigen::Vector3i(x, y, z), Eigen::Vector3f(f1, f2, f3));
+            }
+        }
+    }
+
+    for (size_t x = 1; x < 8-1; x++)
+    {
+        for (size_t y = 1; y < 8-1; y++)
+        {
+            for (size_t z = 1; z < 8-1; z++)
+            {
+                    float avkf = 0.0;
+                    Eigen::Matrix3f analyticalJacobian = testField.computeJacobian(x, y, z);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        for (int j = 0; j < 3; j++)
+                        {
+                            avkf += analyticalJacobian(i,j) * analyticalJacobian(i,j) + gammaKilling * analyticalJacobian(i, j) * analyticalJacobian(j, i);
+                        }
+                    }
+                cout << "Analytical Killing Field Energy and killing energy diff is" << avkf - testField.computeKillingEnergy(x, y, z) << endl;
+            }
+        }
+    }
 }
 
 Eigen::Vector3f DisplacementField::computeKillingEnergyGradient(const Eigen::Vector3i &spatialIndex) const

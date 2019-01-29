@@ -41,10 +41,14 @@ public:
    **/
   Eigen::Matrix3f computeJacobian(float x, float y, float z) const;
 
+  static void testJacobian();
+
   /**
    * Computes Killing energy at any given point of the displacement field.
    */
   float computeKillingEnergy(float x, float y, float z) const;
+
+  static void testKillingEnergy();
 
   /**
    * Computes Killing energy gradient at any given point of the displacement field.
