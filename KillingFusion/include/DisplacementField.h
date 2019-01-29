@@ -25,6 +25,10 @@ public:
   
   Eigen::Vector3f getDisplacementAt(int x, int y, int z) const;
 
+  Eigen::Vector3f getDisplacementAtf(const Eigen::Vector3f &gridLocation) const;
+
+  Eigen::Vector3f getDisplacementAtf(float x, float y, float z) const;
+
   /**
    * Update(adds) the displacement value at location spatialIndex by deltaUpdate.
    */
@@ -35,12 +39,12 @@ public:
   /**
    * Computes Jacobian of Displacement Field(3d Vector Field) with respect to x,y,z.
    **/
-  Eigen::Matrix3f computeJacobian(int x, int y, int z) const;
+  Eigen::Matrix3f computeJacobian(float x, float y, float z) const;
 
   /**
    * Computes Killing energy at any given point of the displacement field.
    */
-  float computeKillingEnergy(int x, int y, int z) const;
+  float computeKillingEnergy(float x, float y, float z) const;
 
   /**
    * Computes Killing energy gradient at any given point of the displacement field.

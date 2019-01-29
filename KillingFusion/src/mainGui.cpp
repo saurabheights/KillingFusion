@@ -298,6 +298,7 @@ int main(int argc, char **argv)
                  << "_alpha-" << alpha 
                  << '/';
   outputDirPath = outputDirectoryStream.str();
+  std::cout << outputDirPath << std::endl;
   cv::utils::fs::createDirectory(outputDirPath);
 
   glutInit(&argc, argv);

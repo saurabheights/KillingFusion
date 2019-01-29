@@ -47,10 +47,12 @@ const extern bool EnergyTypeUsed[3];
  */
 const extern int KILLING_MAX_ITERATIONS;
 
+const extern float deltaSize; // Step Size in Voxel unit for central difference.
+
 // learning rates for gradient descent
 const extern float alpha;
 
-// Convergence criterion - Stop when gradient < threshold
+// Convergence criterion - Stop when gradient < threshold - Not Used. Currently KILLING_MAX_ITERATIONS is only used.
 const extern float threshold;
 
 // Killing condition weights

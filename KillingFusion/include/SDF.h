@@ -12,6 +12,7 @@
 #include "DisplacementField.h"
 #include "SimpleMesh.h"
 
+// ToDo: SDF should take real world coordinates and return the distance. Not the world coordinates in voxel coordinates.
 class SDF
 {
   Eigen::Vector3i m_gridSize;
@@ -100,6 +101,9 @@ public:
    * Get distance value at grid location of displaced SDF. Grid Location unit is voxel size.
    */
   float getDistance(const Eigen::Vector3i &spatialIndex,
+                    const DisplacementField *displacementField) const;
+
+  float getDistancef(const Eigen::Vector3f &gridLocation,
                     const DisplacementField *displacementField) const;
 
   /**

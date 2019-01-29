@@ -3,7 +3,7 @@
 // SDF Generation Parameters
 const float VoxelSize = 0.02f;
 const float UnknownClipDistance = VoxelSize * 4;
-const float MaxSurfaceVoxelDistance = VoxelSize * 4;
+const float MaxSurfaceVoxelDistance = VoxelSize * 3;
 const bool FUSE_BY_MERGE = true;
 
 // Dataset and Pipeline to Use
@@ -21,6 +21,7 @@ const float datasetDepthMinMaxValues[2][2] = {
 const std::string outputDir[2] = {"Duck/", "Snoopy/"};
 
 const bool EnergyTypeUsed[3] = {true, false, false}; // Data, LevelSet, Killing
+const float deltaSize = 0.1; // Step Size in Voxel unit for central difference.
 /**
  * Killing Fusion Pipeline configuration
  * The parameters were fixed as follows: gradient descent step α = 0.1, 
