@@ -260,7 +260,7 @@ void KillingFusion::computeDisplacementField(const SDF *src,
             Eigen::Vector3f displacementUpdate = -alpha * gradient / VoxelSize;
 
             // Trust Region Strategy - Valid only when Data Energy is used.
-            if (!EnergyTypeUsed[0] && !EnergyTypeUsed[1] && !EnergyTypeUsed[2])
+            if (UseTrustStrategy && EnergyTypeUsed[0] && !EnergyTypeUsed[1] && !EnergyTypeUsed[2])
             {
               float _alpha = alpha;
               bool lossDecreased = false;
