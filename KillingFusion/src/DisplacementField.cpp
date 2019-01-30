@@ -78,6 +78,14 @@ DisplacementField &DisplacementField::operator+(const DisplacementField &otherDi
     return *this;
 }
 
+void DisplacementField::initializeAllVoxels(Eigen::Vector3f displacement)
+{
+    for (size_t i = 0; i < m_gridSize.prod(); i++)
+    {
+        this->m_gridDisplacementValue[i] = displacement;
+    }
+}
+
 Eigen::Matrix3f DisplacementField::computeJacobian(float x, float y, float z) const
 {
     // Future Tasks:- Add boundary checks.
@@ -143,7 +151,10 @@ float DisplacementField::computeKillingEnergy(float x, float y, float z) const
     // Compute Jacobian Matrix
     Eigen::Matrix3f jacobian = computeJacobian(x, y, z);
     if (!jacobian.array().isFinite().all())
+    {
         cout << "Jacobian is infinite\n";
+        return 0.0;
+    }
 
     // Stack Matrix and its transpose columnwise
     Eigen::VectorXf jacobianVec(Eigen::Map<Eigen::VectorXf>(jacobian.data(), jacobian.cols() * jacobian.rows()));
@@ -152,7 +163,8 @@ float DisplacementField::computeKillingEnergy(float x, float y, float z) const
 
     // Compute Damped Approximate Killing Vector Field
     float avkf = jacobianVec.dot(jacobianVec) + gammaKilling * jacobianTransposeVec.dot(jacobianVec);
-    return std::min(avkf, 20.0f * m_voxelSize); // Put this threshold to cutoff too high killing values in config.cpp
+    // return avkf;
+    return std::min(avkf, 25.0f); // threshold to cutoff too high killing values, causes Nan in grad. Put this in config.cpp
 }
 
 void DisplacementField::testKillingEnergy()
@@ -175,21 +187,21 @@ void DisplacementField::testKillingEnergy()
         }
     }
 
-    for (size_t x = 1; x < 8-1; x++)
+    for (size_t x = 1; x < 8 - 1; x++)
     {
-        for (size_t y = 1; y < 8-1; y++)
+        for (size_t y = 1; y < 8 - 1; y++)
         {
-            for (size_t z = 1; z < 8-1; z++)
+            for (size_t z = 1; z < 8 - 1; z++)
             {
-                    float avkf = 0.0;
-                    Eigen::Matrix3f analyticalJacobian = testField.computeJacobian(x, y, z);
-                    for (int i = 0; i < 3; i++)
+                float avkf = 0.0;
+                Eigen::Matrix3f analyticalJacobian = testField.computeJacobian(x, y, z);
+                for (int i = 0; i < 3; i++)
+                {
+                    for (int j = 0; j < 3; j++)
                     {
-                        for (int j = 0; j < 3; j++)
-                        {
-                            avkf += analyticalJacobian(i,j) * analyticalJacobian(i,j) + gammaKilling * analyticalJacobian(i, j) * analyticalJacobian(j, i);
-                        }
+                        avkf += analyticalJacobian(i, j) * analyticalJacobian(i, j) + gammaKilling * analyticalJacobian(i, j) * analyticalJacobian(j, i);
                     }
+                }
                 cout << "Analytical Killing Field Energy and killing energy diff is" << avkf - testField.computeKillingEnergy(x, y, z) << endl;
             }
         }

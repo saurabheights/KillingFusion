@@ -36,6 +36,8 @@ public:
 
   DisplacementField& operator+(const DisplacementField& otherDisplacementField);
 
+  void initializeAllVoxels(Eigen::Vector3f displacement);
+
   /**
    * Computes Jacobian of Displacement Field(3d Vector Field) with respect to x,y,z.
    **/
