@@ -66,7 +66,8 @@ class SimpleMesh
     unsigned int AddVertex(Vertex &vertex)
     {
         unsigned int vId = (unsigned int)m_vertices.size();
-        m_vertices.push_back(vertex);
+        // ToDo: Check if issue is from Marching Cubes or gluLookAt. gluLookAt probably inverts the camera to negative y-axis direction.
+        m_vertices.push_back(Vertex(vertex(0), -vertex(1), vertex(2)));
         return vId;
     }
 

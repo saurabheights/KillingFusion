@@ -78,10 +78,6 @@ void renderMesh(SimpleMesh *mesh)
     Vertex &v1 = vertices[triangle.idx1];
     Vertex &v2 = vertices[triangle.idx2];
     // The negative sign is hack, since in SDF Z value increases inwards and in Opengl, its outwards. Somehow also affects y-sign.
-    // ToDo: Check if issue is from Marching Cubes or gluLookAt. gluLookAt probably inverts the camera to negative y-axis direction.
-    v0(1) = -v0(1);
-    v1(1) = -v1(1);
-    v2(1) = -v2(1);
     Vertex normal = (v1 - v0).cross(v2 - v1).normalized();
     glNormal3fv(normal.data());
     glVertex3fv(v0.data());
