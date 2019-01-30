@@ -150,6 +150,7 @@ void displayText(int x, int y, int r, int g, int b, int screenWidth, int screenH
 DatasetReader *datasetReader;
 KillingFusion *fusion;
 std::string outputDirPath;
+bool lastFrameSeen = false;
 
 static void draw()
 {
@@ -266,6 +267,12 @@ static void draw()
   FreeImage_Save(FIF_PNG, image, filenameStream.str().c_str(), 0);
   FreeImage_Unload(image);
   delete[] pixels;
+
+  if(!lastFrameSeen && currentFrameIndex > fusion->getEndFrameIndex()) 
+  {
+    lastFrameSeen = true;
+    meshes[2]->WriteMesh(outputDirPath+"FinalCanonicalMesh.obj");
+  }
 
   /**
    * Release all KillingFusion resources

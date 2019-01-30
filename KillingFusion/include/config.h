@@ -11,7 +11,7 @@
 const extern float VoxelSize;
 const extern float UnknownClipDistance;
 const extern float MaxSurfaceVoxelDistance;
-const extern bool FUSE_BY_MERGE;
+const extern bool FUSE_BY_MERGE; // Always set to true. False is not required.
 // Dataset and Pipeline to Use
 
 // ToDo: later add another layer of VariationalFusion between main and KillingFusion class and further

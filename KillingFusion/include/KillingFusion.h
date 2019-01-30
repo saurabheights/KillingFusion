@@ -86,6 +86,11 @@ public:
   {
     return m_currFrameIndex;
   }
+
+  int getEndFrameIndex()
+  {
+    return m_endFrame;
+  }
 };
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_FUSION_H
