@@ -97,6 +97,8 @@ public:
    */
   float getDistance(const Eigen::Vector3f &gridLocation) const;
 
+  static void testGetDistance();
+
   /**
    * Get distance value at grid location of displaced SDF. Grid Location unit is voxel size.
    */
@@ -108,9 +110,11 @@ public:
 
   /**
    * Get weight value at grid location of SDF. Grid Location unit is voxel size.
-   * Get SDF weight value at grid location. Grid Location unit is voxel size.
    */
   float getWeight(const Eigen::Vector3f &gridLocation) const;
+
+  static void testGetWeight();
+
   float getWeight(const Eigen::Vector3i &spatialIndex,
                   const DisplacementField *displacementField) const;
 
@@ -119,6 +123,7 @@ public:
    */
   Eigen::Vector3f computeDistanceGradient(const Eigen::Vector3f &gridLocation) const;
 
+  static void testComputeDistanceGradient();
   Eigen::Vector3f computeDistanceGradient(const Eigen::Vector3i &spatialIndex,
                                           const DisplacementField *displacementField) const;
 

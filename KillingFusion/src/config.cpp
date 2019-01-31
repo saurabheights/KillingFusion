@@ -1,9 +1,9 @@
 #include <config.h>
 
 // SDF Generation Parameters
-const float VoxelSize = 0.02f;
+const float VoxelSize = 0.008f;
 const float UnknownClipDistance = VoxelSize * 4;
-const float MaxSurfaceVoxelDistance = VoxelSize * 3;
+const float MaxSurfaceVoxelDistance = VoxelSize * 10;
 const bool FUSE_BY_MERGE = true;
 
 // Dataset and Pipeline to Use
@@ -20,12 +20,12 @@ const float datasetDepthMinMaxValues[2][2] = {
 
 const std::string outputDir[2] = {"Duck/", "Snoopy/"};
 
-const bool EnergyTypeUsed[3] = {true, false, true}; // Data, LevelSet, Killing
+const bool EnergyTypeUsed[3] = {true, false, false}; // Data, LevelSet, Killing
 const bool UseZeroDisplacementFieldForNextFrame = false;
-const bool UpdateAllVoxelsInEachIter = false;
+const bool UpdateAllVoxelsInEachIter = true;
 const bool UsePreviousIterationDeformationField = false; // If true, previous iteration displacement field is used for computing LevelSet Energy and KillingEnergy. 
-
-const float deltaSize = 0.1; // Step Size in Voxel unit for central difference.
+const bool UseTrustStrategy = false; // Only used when working only with data energy. Helps in finding which alpha to use for voxel data energy gradient.
+const float deltaSize = 0.01; // Step Size in Voxel unit for central difference.
 
 
 /**
@@ -38,19 +38,19 @@ const float deltaSize = 0.1; // Step Size in Voxel unit for central difference.
  * deformation field contains vectors spanning up to several voxels. We used a voxel size 
  * of 8 mm for human-sized subjects and 4 mm for smaller-scale ones.
  */
-const int KILLING_MAX_ITERATIONS = 128;
-const float threshold = 0.001f;
+const int KILLING_MAX_ITERATIONS = 256;
+const float threshold = 0.000001f;
 
-const float alpha = 0.1f;
+const float alpha = 0.01f;
 
 // Killing weights
-const float omegaKilling = 0.5f;
+const float omegaKilling = 0.2f;
 
 // Killing - Purity
-const float gammaKilling = 0;
+const float gammaKilling = 0.1f;
 
 // Level-set condition weights
-const float omegaLevelSet = 0.05f;
+const float omegaLevelSet = 0.1f;
 
 // Level-set - Prevents division by zero
 const float epsilon = 0.00001f;

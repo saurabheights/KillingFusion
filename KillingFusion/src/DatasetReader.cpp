@@ -135,6 +135,14 @@ cv::Mat DatasetReader::readDepthImage(std::string depthFilename)
   // double minVal, maxVal;
   // cv::minMaxLoc(depthFloatImage, &minVal, &maxVal);
   // std::cout << "Depth Frame " << depthFilename.substr(depthFilename.size() - 7, 3) << " has minimum and maximum value as : " << minVal << ", " << maxVal << std::endl;
+  // cv::Mat depthFloatFilteredImage;
+  // cv::bilateralFilter(depthFloatImage, depthFloatFilteredImage, 5, 50, 50, cv::BORDER_DEFAULT);
+  // cv::Mat dst;
+  // cv::hconcat(depthFloatImage, depthFloatFilteredImage, dst);
+  // dst = (dst - minVal) / (maxVal - minVal);
+  // cv::imshow("Depth Image And Depth Image Filtered", dst);
+  // cv::waitKey(100);
+  // return depthFloatFilteredImage;
 }
 
 int DatasetReader::getDepthHeight()

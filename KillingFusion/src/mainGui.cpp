@@ -290,7 +290,7 @@ int main(int argc, char **argv)
   // Create output directory to save screenshot
   std::stringstream outputDirectoryStream;
   outputDirectoryStream << OUTPUT_DIR << outputDir[datasetType]
-                 << "Data-" << EnergyTypeUsed[0]
+                 << "Data-1DivideDisplacementByVoxelSize-ZeroDisplacementField-" << EnergyTypeUsed[0]
                  << "_LS-" << EnergyTypeUsed[1] << "_omegaLS-" << omegaLevelSet
                  << "_KVF-" << EnergyTypeUsed[2] << "_omegaK-" << omegaKilling << "_gammaK-" << gammaKilling
                  << "_Fuse-" << (FUSE_BY_MERGE ? "Merge" : "Math")
