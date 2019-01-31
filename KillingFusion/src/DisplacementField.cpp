@@ -173,11 +173,11 @@ void DisplacementField::testKillingEnergy()
     // Since interpolation is used in numerical differentiation, analytic function f to test should be linear
     double voxelSize = 0.5;
     DisplacementField testField(Eigen::Vector3i(8, 8, 8), voxelSize);
-    for (size_t x = 0; x < 5; x++)
+    for (size_t x = 0; x < 8; x++)
     {
-        for (size_t y = 0; y < 5; y++)
+        for (size_t y = 0; y < 8; y++)
         {
-            for (size_t z = 0; z < 5; z++)
+            for (size_t z = 0; z < 8; z++)
             {
                 // F(x,y,z) = (x+y, x+z, y+z)
                 double f1 = x + y + z;
@@ -188,11 +188,11 @@ void DisplacementField::testKillingEnergy()
         }
     }
 
-    for (size_t x = 1; x < 8 - 1; x++)
+    for (size_t x = 0; x < 7; x++)
     {
-        for (size_t y = 1; y < 8 - 1; y++)
+        for (size_t y = 1; y < 7; y++)
         {
-            for (size_t z = 1; z < 8 - 1; z++)
+            for (size_t z = 1; z < 7; z++)
             {
                 double avkf = 0.0;
                 Eigen::Matrix3d analyticalJacobian = testField.computeJacobian(x, y, z);
@@ -203,6 +203,12 @@ void DisplacementField::testKillingEnergy()
                         avkf += analyticalJacobian(i, j) * analyticalJacobian(i, j) + gammaKilling * analyticalJacobian(i, j) * analyticalJacobian(j, i);
                     }
                 }
+                if(fabs(avkf - testField.computeKillingEnergy(x, y, z)) > epsilon)
+                {
+                    cout << analyticalJacobian << endl;
+                    float expectedAvkf = testField.computeKillingEnergy(x, y, z);
+                }
+                // remove truncation of killing energy if test fails.
                 assert(fabs(avkf - testField.computeKillingEnergy(x, y, z)) < epsilon && "Whoops! Check DisplacementField::testKillingEnergy");
             }
         }
