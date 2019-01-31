@@ -9,53 +9,53 @@
 class DisplacementField
 {
 private:
-  std::vector<Eigen::Vector3f> m_gridDisplacementValue;
-  float m_voxelSize;
+  std::vector<Eigen::Vector3d> m_gridDisplacementValue;
+  double m_voxelSize;
   Eigen::Vector3i m_gridSize;
   Eigen::Vector3i m_gridSpacingPerAxis; // See update function to see how this is used.
-  Eigen::Vector3f m_bound;
+  Eigen::Vector3d m_bound;
 
 public:
   DisplacementField() = delete;
   DisplacementField(Eigen::Vector3i gridSize,
-                    float _voxelSize);
+                    double _voxelSize);
   ~DisplacementField();
 
-  Eigen::Vector3f getDisplacementAt(const Eigen::Vector3i &spatialIndex) const;
+  Eigen::Vector3d getDisplacementAt(const Eigen::Vector3i &spatialIndex) const;
   
-  Eigen::Vector3f getDisplacementAt(int x, int y, int z) const;
+  Eigen::Vector3d getDisplacementAt(int x, int y, int z) const;
 
-  Eigen::Vector3f getDisplacementAtf(const Eigen::Vector3f &gridLocation) const;
+  Eigen::Vector3d getDisplacementAtf(const Eigen::Vector3d &gridLocation) const;
 
-  Eigen::Vector3f getDisplacementAtf(float x, float y, float z) const;
+  Eigen::Vector3d getDisplacementAtf(double x, double y, double z) const;
 
   /**
    * Update(adds) the displacement value at location spatialIndex by deltaUpdate.
    */
-  void update(const Eigen::Vector3i& spatialIndex, const Eigen::Vector3f &deltaUpdate);
+  void update(const Eigen::Vector3i& spatialIndex, const Eigen::Vector3d &deltaUpdate);
 
   DisplacementField& operator+(const DisplacementField& otherDisplacementField);
 
-  void initializeAllVoxels(Eigen::Vector3f displacement);
+  void initializeAllVoxels(Eigen::Vector3d displacement);
 
   /**
    * Computes Jacobian of Displacement Field(3d Vector Field) with respect to x,y,z.
    **/
-  Eigen::Matrix3f computeJacobian(float x, float y, float z) const;
+  Eigen::Matrix3d computeJacobian(double x, double y, double z) const;
 
   static void testJacobian();
 
   /**
    * Computes Killing energy at any given point of the displacement field.
    */
-  float computeKillingEnergy(float x, float y, float z) const;
+  double computeKillingEnergy(double x, double y, double z) const;
 
   static void testKillingEnergy();
 
   /**
    * Computes Killing energy gradient at any given point of the displacement field.
    */
-  Eigen::Vector3f computeKillingEnergyGradient(const Eigen::Vector3i &spatialIndex) const;
+  Eigen::Vector3d computeKillingEnergyGradient(const Eigen::Vector3i &spatialIndex) const;
 };
 
 #endif // DISPLACEMENT_FIELD_H

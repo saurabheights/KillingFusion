@@ -15,12 +15,12 @@ class DatasetReader
 {
 private:
   std::string m_imageDir;
-  Eigen::Matrix3f m_depthIntrinsicMatrix;
+  Eigen::Matrix3d m_depthIntrinsicMatrix;
   int m_numImageFiles;
   int m_depthHeight, m_depthWidth;
-  std::pair<float, float> m_minMaxDepth;
+  std::pair<double, double> m_minMaxDepth;
 
-  std::vector<float> LoadMatrixFromFile(std::string filename, int M);
+  std::vector<double> LoadMatrixFromFile(std::string filename, int M);
   cv::Mat readDepthImage(std::string depthFilename);
   void analyzeMinMaxDepthValues(const DEFORMABLE_DATASET dataset);
 
@@ -37,10 +37,10 @@ public:
   int getNumImageFiles() const;
   int getDepthHeight();
   int getDepthWidth();
-  Eigen::Matrix3f getDepthIntrinsicMatrix();
+  Eigen::Matrix3d getDepthIntrinsicMatrix();
 
-  float getMinimumDepthThreshold() { return m_minMaxDepth.first; }
-  float getMaximumDepthThreshold() { return m_minMaxDepth.second; }
+  double getMinimumDepthThreshold() { return m_minMaxDepth.first; }
+  double getMaximumDepthThreshold() { return m_minMaxDepth.second; }
 };
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_DATASETREADER_H

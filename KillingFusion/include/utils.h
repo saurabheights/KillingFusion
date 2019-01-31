@@ -3,45 +3,45 @@
 
 // ToDo: Use template.
 
-inline float interpolate1D(float v_0, float v_1, float x)
+inline double interpolate1D(double v_0, double v_1, double x)
 {
     return v_0 * (1 - x) + v_1 * x;
 }
 
-inline float interpolate2D(float v_00, float v_01, float v_10, float v_11, float x, float y)
+inline double interpolate2D(double v_00, double v_01, double v_10, double v_11, double x, double y)
 {
-    float s = interpolate1D(v_00, v_01, x);
-    float t = interpolate1D(v_10, v_11, x);
+    double s = interpolate1D(v_00, v_01, x);
+    double t = interpolate1D(v_10, v_11, x);
     return interpolate1D(s, t, y);
 }
 
-inline float interpolate3D(float v_000, float v_001, float v_010, float v_011,
-                    float v_100, float v_101, float v_110, float v_111,
-                    float x, float y, float z)
+inline double interpolate3D(double v_000, double v_001, double v_010, double v_011,
+                    double v_100, double v_101, double v_110, double v_111,
+                    double x, double y, double z)
 {
-    float s = interpolate2D(v_000, v_001, v_010, v_011, x, y);
-    float t = interpolate2D(v_100, v_101, v_110, v_111, x, y);
+    double s = interpolate2D(v_000, v_001, v_010, v_011, x, y);
+    double t = interpolate2D(v_100, v_101, v_110, v_111, x, y);
     return interpolate1D(s, t, z);
 }
 
-inline Eigen::Vector3f interpolate1DVectors(Eigen::Vector3f v_0, Eigen::Vector3f v_1, float x)
+inline Eigen::Vector3d interpolate1DVectors(Eigen::Vector3d v_0, Eigen::Vector3d v_1, double x)
 {
     return v_0 * (1 - x) + v_1 * x;
 }
 
-inline Eigen::Vector3f interpolate2DVectors(Eigen::Vector3f v_00, Eigen::Vector3f v_01, Eigen::Vector3f v_10, Eigen::Vector3f v_11, float x, float y)
+inline Eigen::Vector3d interpolate2DVectors(Eigen::Vector3d v_00, Eigen::Vector3d v_01, Eigen::Vector3d v_10, Eigen::Vector3d v_11, double x, double y)
 {
-    Eigen::Vector3f s = interpolate1DVectors(v_00, v_01, x);
-    Eigen::Vector3f t = interpolate1DVectors(v_10, v_11, x);
+    Eigen::Vector3d s = interpolate1DVectors(v_00, v_01, x);
+    Eigen::Vector3d t = interpolate1DVectors(v_10, v_11, x);
     return interpolate1DVectors(s, t, y);
 }
 
-inline Eigen::Vector3f interpolate3DVectors(Eigen::Vector3f v_000, Eigen::Vector3f v_001, Eigen::Vector3f v_010, Eigen::Vector3f v_011,
-                    Eigen::Vector3f v_100, Eigen::Vector3f v_101, Eigen::Vector3f v_110, Eigen::Vector3f v_111,
-                    float x, float y, float z)
+inline Eigen::Vector3d interpolate3DVectors(Eigen::Vector3d v_000, Eigen::Vector3d v_001, Eigen::Vector3d v_010, Eigen::Vector3d v_011,
+                    Eigen::Vector3d v_100, Eigen::Vector3d v_101, Eigen::Vector3d v_110, Eigen::Vector3d v_111,
+                    double x, double y, double z)
 {
-    Eigen::Vector3f s = interpolate2DVectors(v_000, v_001, v_010, v_011, x, y);
-    Eigen::Vector3f t = interpolate2DVectors(v_100, v_101, v_110, v_111, x, y);
+    Eigen::Vector3d s = interpolate2DVectors(v_000, v_001, v_010, v_011, x, y);
+    Eigen::Vector3d t = interpolate2DVectors(v_100, v_101, v_110, v_111, x, y);
     return interpolate1DVectors(s, t, z);
 }
 

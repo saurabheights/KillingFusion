@@ -11,10 +11,10 @@
 #include "utils.h"
 using namespace std;
 
-SDF::SDF(float _voxelSize,
-         Eigen::Vector3f _min3dLoc,
-         Eigen::Vector3f _max3dLoc,
-         float unknownClipDistance)
+SDF::SDF(double _voxelSize,
+         Eigen::Vector3d _min3dLoc,
+         Eigen::Vector3d _max3dLoc,
+         double unknownClipDistance)
     : m_voxelSize{_voxelSize},
       m_bound{_max3dLoc - _min3dLoc}
 {
@@ -61,30 +61,30 @@ SDF::~SDF()
 }
 
 // ToDo - Add generateSphere method. Make it more generic.
-vector<SDF> SDF::getDataEnergyTestSample(float _voxelSize,
-                                         float unknownClipDistance)
+vector<SDF> SDF::getDataEnergyTestSample(double _voxelSize,
+                                         double unknownClipDistance)
 {
-    Eigen::Vector3f _min3dLoc = Eigen::Vector3f::Zero();
-    Eigen::Vector3f _max3dLoc = Eigen::Vector3f::Zero().array() + _voxelSize * 9;
+    Eigen::Vector3d _min3dLoc = Eigen::Vector3d::Zero();
+    Eigen::Vector3d _max3dLoc = Eigen::Vector3d::Zero().array() + _voxelSize * 9;
     SDF canSdf(_voxelSize, _min3dLoc, _max3dLoc, unknownClipDistance);
     SDF nextSdf(_voxelSize, _min3dLoc, _max3dLoc, unknownClipDistance);
 
     // Build Sphere with different center
-    Eigen::Vector3f canSdfSphereCenter = (canSdf.m_gridSize / 2).cast<float>() + Eigen::Vector3f(0.5, 0.5, -0.5);
+    Eigen::Vector3d canSdfSphereCenter = (canSdf.m_gridSize / 2).cast<double>() + Eigen::Vector3d(0.5, 0.5, -0.5);
     cout << "Center for First Sphere is " << canSdfSphereCenter.transpose() << endl;
-    Eigen::Vector3f nextSdfSphereCenter = (canSdf.m_gridSize / 2).cast<float>() + Eigen::Vector3f(0.5, 0.5, 0.5);
+    Eigen::Vector3d nextSdfSphereCenter = (canSdf.m_gridSize / 2).cast<double>() + Eigen::Vector3d(0.5, 0.5, 0.5);
     cout << "Center for Second Sphere is " << nextSdfSphereCenter.transpose() << endl;
-    float radius = 3 * canSdf.m_voxelSize;
+    double radius = 3 * canSdf.m_voxelSize;
     for (int z = 0; z < canSdf.m_gridSize(2); z++)
     {
         for (int y = 0; y < canSdf.m_gridSize(1); y++)
         {
             for (int x = 0; x < canSdf.m_gridSize(0); x++)
             {
-                Eigen::Vector3f voxelLocation = Eigen::Vector3f(x + 0.5f, y + 0.5f, z + 0.5f);
+                Eigen::Vector3d voxelLocation = Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5);
                 int voxelIndex = z * canSdf.m_gridSpacingPerAxis(2) + y * canSdf.m_gridSpacingPerAxis(1) + x;
-                float canSdfDistance = (canSdfSphereCenter - voxelLocation).norm() * _voxelSize - radius;
-                float nextSdfDistance = (nextSdfSphereCenter - voxelLocation).norm() * _voxelSize - radius;
+                double canSdfDistance = (canSdfSphereCenter - voxelLocation).norm() * _voxelSize - radius;
+                double nextSdfDistance = (nextSdfSphereCenter - voxelLocation).norm() * _voxelSize - radius;
                 if (canSdfDistance >= -unknownClipDistance)
                 {
                     canSdf.m_voxelGridTSDF.at(voxelIndex) = canSdfDistance;
@@ -135,51 +135,51 @@ void SDF::allocateMemoryForSDF()
 }
 
 void SDF::integrateDepthFrame(cv::Mat depthFrame,
-                              Eigen::Matrix4f depthFrameC2WPose,
-                              Eigen::Matrix3f depthIntrinsicMatrix,
-                              float minDepth,
-                              float maxDepth)
+                              Eigen::Matrix4d depthFrameC2WPose,
+                              Eigen::Matrix3d depthIntrinsicMatrix,
+                              double minDepth,
+                              double maxDepth)
 {
     int w = depthFrame.cols;
     int h = depthFrame.rows;
 
-    Eigen::Matrix3f depthIntrinsicMatrixInv = depthIntrinsicMatrix.inverse();
-    Eigen::Matrix4f world_to_camera_pose = depthFrameC2WPose.inverse();
+    Eigen::Matrix3d depthIntrinsicMatrixInv = depthIntrinsicMatrix.inverse();
+    Eigen::Matrix4d world_to_camera_pose = depthFrameC2WPose.inverse();
 
     for (int z = 0; z < m_gridSize(2); z++)
     {
-        float Z = m_voxelSize * (z + 0.5f) + m_min3dLoc(2);
+        double Z = m_voxelSize * (z + 0.5) + m_min3dLoc(2);
         for (int y = 0; y < m_gridSize(1); y++)
         {
-            float Y = m_voxelSize * (y + 0.5f) + m_min3dLoc(1);
+            double Y = m_voxelSize * (y + 0.5) + m_min3dLoc(1);
             for (int x = 0; x < m_gridSize(0); x++)
             {
-                float X = m_voxelSize * (x + 0.5f) + m_min3dLoc(0);
+                double X = m_voxelSize * (x + 0.5) + m_min3dLoc(0);
                 // Compute 3d location of center of voxel
                 // Backproject it to the depth image
-                Eigen::Vector4f voxelCenter(X, Y, Z, 1);
-                Eigen::Vector4f voxelCenterInCamera = world_to_camera_pose * voxelCenter;
-                Eigen::Vector3f voxelPixelLocation(voxelCenterInCamera(0) / voxelCenterInCamera(2),
+                Eigen::Vector4d voxelCenter(X, Y, Z, 1);
+                Eigen::Vector4d voxelCenterInCamera = world_to_camera_pose * voxelCenter;
+                Eigen::Vector3d voxelPixelLocation(voxelCenterInCamera(0) / voxelCenterInCamera(2),
                                                    voxelCenterInCamera(1) / voxelCenterInCamera(2), 1);
                 voxelPixelLocation = depthIntrinsicMatrix * voxelPixelLocation;
 
                 // If pixel is outside the image, check next voxel
-                int col = roundf(voxelPixelLocation(0) + 0.5f);
+                int col = roundf(voxelPixelLocation(0) + 0.5);
                 if (col < 0 || col >= depthFrame.cols)
                     continue;
 
-                int row = roundf(voxelPixelLocation(1) + 0.5f);
+                int row = roundf(voxelPixelLocation(1) + 0.5);
                 if (row < 0 || row >= depthFrame.rows)
                     continue;
 
                 // If depth image is valid at the pixel
-                float voxelCenterDepth = voxelCenterInCamera(2);
-                float depth = depthFrame.at<float>(row, col);
+                double voxelCenterDepth = voxelCenterInCamera(2);
+                double depth = depthFrame.at<double>(row, col);
                 if (depth < minDepth || depth > maxDepth)
                     continue;
 
                 // Distance from surface
-                float dist = depth - voxelCenterDepth;
+                double dist = depth - voxelCenterDepth;
 
                 // Check if diff is too negative: m_unknownClipDistance
                 if (dist < -m_unknownClipDistance) // Ignore any voxel at certain threshold behind the surface.
@@ -209,7 +209,7 @@ void SDF::fuse(const SDF *otherSdf)
             continue;
 
         long w1 = m_voxelGridWeight.at(voxelIndex);
-        float dist2 = otherSdf->m_voxelGridTSDF.at(voxelIndex);
+        double dist2 = otherSdf->m_voxelGridTSDF.at(voxelIndex);
         if (w1 == 0)
         {
             m_voxelGridTSDF.at(voxelIndex) = dist2;
@@ -217,7 +217,7 @@ void SDF::fuse(const SDF *otherSdf)
         }
         else
         {
-            float dist1 = m_voxelGridTSDF.at(voxelIndex);
+            double dist1 = m_voxelGridTSDF.at(voxelIndex);
             if (FUSE_BY_MERGE)
             { // If voxels are aligned, this addition makes sense
                 m_voxelGridTSDF.at(voxelIndex) = (w1 * dist1 + w2 * dist2) / (w1 + w2);
@@ -252,17 +252,17 @@ void SDF::fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementFi
         {
             for (int x = 0; x < m_gridSize(0); x++)
             {
-                Eigen::Vector3f otherSdfIndex = Eigen::Vector3f(x + 0.5f, y + 0.5f, z + 0.5f) +
+                Eigen::Vector3d otherSdfIndex = Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) +
                                                 otherDisplacementField->getDisplacementAt(x, y, z);
                 // Tricky Part: We need to first get weight at otherSdfIndex.
-                float w2 = otherSdf->getWeight(otherSdfIndex);
+                double w2 = otherSdf->getWeight(otherSdfIndex);
                 // Ignore voxels that are at distance -1 behind the surface in otherSDF. No change needed.
                 // http://realtimecollisiondetection.net/blog/?p=89
                 if (fabs(w2) < 1e-5f) // Nearly Zero
                     continue;         // Make no change to this voxel.
 
                 long w1 = getWeightAtIndex(x, y, z);
-                float dist2 = otherSdf->getDistance(otherSdfIndex);
+                double dist2 = otherSdf->getDistance(otherSdfIndex);
                 int voxelIndex = z * m_gridSpacingPerAxis(2) + y * m_gridSpacingPerAxis(1) + x;
                 if (w1 == 0)
                 {
@@ -271,7 +271,7 @@ void SDF::fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementFi
                 }
                 else
                 {
-                    float dist1 = m_voxelGridTSDF.at(voxelIndex);
+                    double dist1 = m_voxelGridTSDF.at(voxelIndex);
                     if (FUSE_BY_MERGE)
                     { // If voxels are aligned, this addition makes sense
                         m_voxelGridTSDF.at(voxelIndex) = (w1 * dist1 + w2 * dist2) / (w1 + w2);
@@ -299,7 +299,7 @@ void SDF::fuse(const SDF *otherSdf, const DisplacementField *otherDisplacementFi
 // Tested by using displacementField of deltaX, 0, 0
 void SDF::update(const DisplacementField *displacementField)
 {
-    std::vector<float> newVoxelGridTSDF;
+    std::vector<double> newVoxelGridTSDF;
     std::vector<long> newVoxelGridWeight;
     newVoxelGridTSDF.resize(m_totalNumberOfVoxels);
     newVoxelGridWeight.resize(m_totalNumberOfVoxels);
@@ -312,9 +312,9 @@ void SDF::update(const DisplacementField *displacementField)
         {
             for (int x = 0; x < m_gridSize(0); x++)
             {
-                Eigen::Vector3f sdfLocation = Eigen::Vector3f(x + 0.5f, y + 0.5f, z + 0.5f) + displacementField->getDisplacementAt(x, y, z);
-                float w = getWeight(sdfLocation);
-                float dist = getDistance(sdfLocation);
+                Eigen::Vector3d sdfLocation = Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) + displacementField->getDisplacementAt(x, y, z);
+                double w = getWeight(sdfLocation);
+                double dist = getDistance(sdfLocation);
                 int voxelIndex = z * m_gridSpacingPerAxis(2) + y * m_gridSpacingPerAxis(1) + x;
                 newVoxelGridTSDF.at(voxelIndex) = dist;
                 newVoxelGridWeight.at(voxelIndex) = w;
@@ -362,9 +362,9 @@ bool SDF::ProcessVolumeCell(int x, int y, int z, double iso, SimpleMesh *mesh) c
 
     for (int i1 = 0; i1 < numTris; i1++)
     {
-        Vertex v0((float)tris[i1].p[0][0], (float)tris[i1].p[0][1], (float)tris[i1].p[0][2]);
-        Vertex v1((float)tris[i1].p[1][0], (float)tris[i1].p[1][1], (float)tris[i1].p[1][2]);
-        Vertex v2((float)tris[i1].p[2][0], (float)tris[i1].p[2][1], (float)tris[i1].p[2][2]);
+        Vertex v0((double)tris[i1].p[0][0], (double)tris[i1].p[0][1], (double)tris[i1].p[0][2]);
+        Vertex v1((double)tris[i1].p[1][0], (double)tris[i1].p[1][1], (double)tris[i1].p[1][2]);
+        Vertex v2((double)tris[i1].p[2][0], (double)tris[i1].p[2][1], (double)tris[i1].p[2][2]);
 
         unsigned int vhandle[3];
         vhandle[0] = mesh->AddVertex(v0);
@@ -402,7 +402,7 @@ SimpleMesh *SDF::getMesh() const
         {
             for (int x = 0; x < m_gridSize(0); x++)
             {
-                float distance = getDistanceAtIndex(x, y, z);
+                double distance = getDistanceAtIndex(x, y, z);
                 // if (distance > MaxSurfaceVoxelDistance || distance < -MaxSurfaceVoxelDistance)
                 if (distance > MaxSurfaceVoxelDistance || distance < -UnknownClipDistance)
                     continue;
@@ -430,22 +430,22 @@ void SDF::save_mesh(std::string mesh_name_prefix,
 }
 
 void SDF::dumpToBinFile(string outputFilePath,
-                        float truncationDistanceInVoxelSizeUnit,
-                        float minimumWeightThreshold) const
+                        double truncationDistanceInVoxelSizeUnit,
+                        double minimumWeightThreshold) const
 {
-    // Save TSDF voxel grid and its parameters to disk as binary file (float array)
+    // Save TSDF voxel grid and its parameters to disk as binary file (double array)
     cout << "============================================================================\n";
     cout << "Saving TSDF voxel grid values at " << outputFilePath << "\n";
     ofstream outFile(outputFilePath, ios::binary | ios::out);
     outFile.write((char *)m_gridSize.data(), 3 * sizeof(int));
-    outFile.write((char *)m_min3dLoc.data(), 3 * sizeof(float));
-    outFile.write((char *)&m_voxelSize, sizeof(float));
-    outFile.write((char *)&truncationDistanceInVoxelSizeUnit, sizeof(float));
-    outFile.write((char *)(&m_voxelGridTSDF[0]), m_totalNumberOfVoxels * sizeof(float));
+    outFile.write((char *)m_min3dLoc.data(), 3 * sizeof(double));
+    outFile.write((char *)&m_voxelSize, sizeof(double));
+    outFile.write((char *)&truncationDistanceInVoxelSizeUnit, sizeof(double));
+    outFile.write((char *)(&m_voxelGridTSDF[0]), m_totalNumberOfVoxels * sizeof(double));
     outFile.close();
 
-    float min = m_voxelGridTSDF[0];
-    float max = m_voxelGridTSDF[0];
+    double min = m_voxelGridTSDF[0];
+    double max = m_voxelGridTSDF[0];
     for (size_t i = 0; i < m_totalNumberOfVoxels; i++)
     {
         if (m_voxelGridTSDF[i] < min)
@@ -472,14 +472,14 @@ bool SDF::indexInGridBounds(const Eigen::Vector3i &gridSpatialIndex) const
             (gridSpatialIndex.array() < m_gridSize.array()).all());
 }
 
-float SDF::getDistanceAtIndex(const Eigen::Vector3i &gridSpatialIndex) const
+double SDF::getDistanceAtIndex(const Eigen::Vector3i &gridSpatialIndex) const
 {
     if (!indexInGridBounds(gridSpatialIndex))
         return -1;
     return m_voxelGridTSDF.at(gridSpatialIndex.dot(m_gridSpacingPerAxis));
 }
 
-float SDF::getDistanceAtIndex(int x, int y, int z) const
+double SDF::getDistanceAtIndex(int x, int y, int z) const
 {
     if (!indexInGridBounds(x, y, z))
         return -1;
@@ -500,24 +500,24 @@ long SDF::getWeightAtIndex(int x, int y, int z) const
     return m_voxelGridWeight.at(z * m_gridSpacingPerAxis(2) + y * m_gridSpacingPerAxis(1) + x);
 }
 
-float SDF::getDistance(const Eigen::Vector3f &gridLocation) const
+double SDF::getDistance(const Eigen::Vector3d &gridLocation) const
 {
-    // Substract 0.5f since, grid index (x,y,z) stores distance value for center (x,y,z)+(0.5,0.5,0.5)
-    Eigen::Vector3f trueGridLocation = gridLocation.array() - 0.5f;
+    // Substract 0.5 since, grid index (x,y,z) stores distance value for center (x,y,z)+(0.5,0.5,0.5)
+    Eigen::Vector3d trueGridLocation = gridLocation.array() - 0.5;
 
     // Interpolate in 3D array - https://stackoverflow.com/questions/19271568/trilinear-interpolation
     Eigen::Vector3i bottomLeftFrontIndex = trueGridLocation.cast<int>();
 
     // ToDo - Compute indices yourself to make faster. Done as below to get implementation correct first.
-    float vertex_000 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 0));
-    float vertex_001 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 0));
-    float vertex_010 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 0));
-    float vertex_011 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 0));
-    float vertex_100 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 1));
-    float vertex_101 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 1));
-    float vertex_110 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 1));
-    float vertex_111 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 1));
-    Eigen::Vector3f interpolationWeights = trueGridLocation - bottomLeftFrontIndex.cast<float>();
+    double vertex_000 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 0));
+    double vertex_001 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 0));
+    double vertex_010 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 0));
+    double vertex_011 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 0));
+    double vertex_100 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 1));
+    double vertex_101 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 1));
+    double vertex_110 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 1));
+    double vertex_111 = getDistanceAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 1));
+    Eigen::Vector3d interpolationWeights = trueGridLocation - bottomLeftFrontIndex.cast<double>();
     return interpolate3D(vertex_000, vertex_001, vertex_010, vertex_011,
                          vertex_100, vertex_101, vertex_110, vertex_111,
                          interpolationWeights(0), interpolationWeights(1), interpolationWeights(2));
@@ -526,10 +526,10 @@ float SDF::getDistance(const Eigen::Vector3f &gridLocation) const
 void SDF::testGetDistance()
 {
     // Since interpolation is used, analytic function f to test should be linear
-    float voxelSize = 0.5;
-    Eigen::Vector3f min3dLoc(0, 0, 0);
-    Eigen::Vector3f max3dLoc(8, 8, 8);
-    float unknownClipDistance = 10;
+    double voxelSize = 0.5;
+    Eigen::Vector3d min3dLoc(0, 0, 0);
+    Eigen::Vector3d max3dLoc(8, 8, 8);
+    double unknownClipDistance = 10;
     SDF testSdf(voxelSize, min3dLoc, max3dLoc, UnknownClipDistance);
     cout << testSdf.m_voxelGridTSDF.size() << endl;
     for (int z = 0; z < testSdf.m_gridSize(2); z++)
@@ -555,10 +555,10 @@ void SDF::testGetDistance()
             {
                 for (int i = 0; i < 10; i++)
                 {
-                    float delta = i / 10.0f;
-                    float f1 = x + delta + y - delta - z + delta;
-                    Eigen::Vector3f gridLocation(x + 0.5f + delta, y + 0.5f - delta, z + 0.5f - delta);
-                    float f2 = testSdf.getDistance(gridLocation);
+                    double delta = i / 10.0;
+                    double f1 = x + delta + y - delta - z + delta;
+                    Eigen::Vector3d gridLocation(x + 0.5 + delta, y + 0.5 - delta, z + 0.5 - delta);
+                    double f2 = testSdf.getDistance(gridLocation);
                     // cout << x << ',' << y << ',' << z << ": Expected" << f1 << ", Actual" << f2 << endl;
                     assert(fabs(f1 - f2) < epsilon && "Whoops, check testGetDistance");
                 }
@@ -567,37 +567,37 @@ void SDF::testGetDistance()
     }
 }
 
-float SDF::getDistance(const Eigen::Vector3i &spatialIndex,
+double SDF::getDistance(const Eigen::Vector3i &spatialIndex,
                        const DisplacementField *displacementField) const
 {
-    Eigen::Vector3f displacedGridLocation = spatialIndex.cast<float>() + displacementField->getDisplacementAt(spatialIndex) + Eigen::Vector3f(0.5, 0.5, 0.5);
+    Eigen::Vector3d displacedGridLocation = spatialIndex.cast<double>() + displacementField->getDisplacementAt(spatialIndex) + Eigen::Vector3d(0.5, 0.5, 0.5);
     return getDistance(displacedGridLocation);
 }
 
-float SDF::getDistancef(const Eigen::Vector3f &gridLocation,
+double SDF::getDistancef(const Eigen::Vector3d &gridLocation,
                         const DisplacementField *displacementField) const
 {
-    Eigen::Vector3f displacedGridLocation = gridLocation + displacementField->getDisplacementAtf(gridLocation) + Eigen::Vector3f(0.5, 0.5, 0.5);
+    Eigen::Vector3d displacedGridLocation = gridLocation + displacementField->getDisplacementAtf(gridLocation) + Eigen::Vector3d(0.5, 0.5, 0.5);
     return getDistance(displacedGridLocation);
 }
 
-float SDF::getWeight(const Eigen::Vector3f &gridLocation) const
+double SDF::getWeight(const Eigen::Vector3d &gridLocation) const
 {
-    // Substract 0.5f since, grid index (x,y,z) stores weight value for center (x,y,z)+(0.5,0.5,0.5)
-    Eigen::Vector3f trueGridLocation = gridLocation.array() - 0.5f;
+    // Substract 0.5 since, grid index (x,y,z) stores weight value for center (x,y,z)+(0.5,0.5,0.5)
+    Eigen::Vector3d trueGridLocation = gridLocation.array() - 0.5;
 
     // Interpolate in 3D array - https://stackoverflow.com/questions/19271568/trilinear-interpolation
     Eigen::Vector3i bottomLeftFrontIndex = trueGridLocation.cast<int>();
     // ToDo - Compute indices yourself to make faster. Done as below to get implementation correct first.
-    float vertex_000 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 0));
-    float vertex_001 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 0));
-    float vertex_010 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 0));
-    float vertex_011 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 0));
-    float vertex_100 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 1));
-    float vertex_101 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 1));
-    float vertex_110 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 1));
-    float vertex_111 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 1));
-    Eigen::Vector3f interpolationWeights = trueGridLocation - bottomLeftFrontIndex.cast<float>();
+    double vertex_000 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 0));
+    double vertex_001 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 0));
+    double vertex_010 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 0));
+    double vertex_011 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 0));
+    double vertex_100 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 0, 1));
+    double vertex_101 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 0, 1));
+    double vertex_110 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(0, 1, 1));
+    double vertex_111 = getWeightAtIndex(bottomLeftFrontIndex + Eigen::Vector3i(1, 1, 1));
+    Eigen::Vector3d interpolationWeights = trueGridLocation - bottomLeftFrontIndex.cast<double>();
     return interpolate3D(vertex_000, vertex_001, vertex_010, vertex_011,
                          vertex_100, vertex_101, vertex_110, vertex_111,
                          interpolationWeights(0), interpolationWeights(1), interpolationWeights(2));
@@ -606,10 +606,10 @@ float SDF::getWeight(const Eigen::Vector3f &gridLocation) const
 void SDF::testGetWeight()
 {
     // Since interpolation is used, analytic function f to test should be linear
-    float voxelSize = 0.5;
-    Eigen::Vector3f min3dLoc(0, 0, 0);
-    Eigen::Vector3f max3dLoc(8, 8, 8);
-    float unknownClipDistance = 10;
+    double voxelSize = 0.5;
+    Eigen::Vector3d min3dLoc(0, 0, 0);
+    Eigen::Vector3d max3dLoc(8, 8, 8);
+    double unknownClipDistance = 10;
     SDF testSdf(voxelSize, min3dLoc, max3dLoc, UnknownClipDistance);
     // cout << testSdf.m_voxelGridTSDF.size() << endl;
     for (int z = 0; z < testSdf.m_gridSize(2); z++)
@@ -635,10 +635,10 @@ void SDF::testGetWeight()
             {
                 for (int i = 0; i < 10; i++)
                 {
-                    float delta = i / 10.0f;
-                    float f1 = x + delta + y - delta - z + delta;
-                    Eigen::Vector3f gridLocation(x + 0.5f + delta, y + 0.5f - delta, z + 0.5f - delta);
-                    float f2 = testSdf.getWeight(gridLocation);
+                    double delta = i / 10.0f;
+                    double f1 = x + delta + y - delta - z + delta;
+                    Eigen::Vector3d gridLocation(x + 0.5 + delta, y + 0.5 - delta, z + 0.5 - delta);
+                    double f2 = testSdf.getWeight(gridLocation);
                     // cout << x << ',' << y << ',' << z << ": Expected" << f1 << ", Actual" << f2 << endl;
                     assert(fabs(f1 - f2) < epsilon && "Whoops, check testGetWeights");
                 }
@@ -647,27 +647,27 @@ void SDF::testGetWeight()
     }
 }
 
-float SDF::getWeight(const Eigen::Vector3i &spatialIndex,
+double SDF::getWeight(const Eigen::Vector3i &spatialIndex,
                      const DisplacementField *displacementField) const
 {
-    Eigen::Vector3f displacedGridLocation = spatialIndex.cast<float>() + displacementField->getDisplacementAt(spatialIndex) + Eigen::Vector3f(0.5, 0.5, 0.5);
+    Eigen::Vector3d displacedGridLocation = spatialIndex.cast<double>() + displacementField->getDisplacementAt(spatialIndex) + Eigen::Vector3d(0.5, 0.5, 0.5);
     return getWeight(displacedGridLocation);
 }
 
-Eigen::Vector3f SDF::computeDistanceGradient(const Eigen::Vector3f &gridLocation) const
+Eigen::Vector3d SDF::computeDistanceGradient(const Eigen::Vector3d &gridLocation) const
 {
-    // Substract 0.5f since, grid index (x,y,z) stores distance value for center (x,y,z)+(0.5,0.5,0.5)
-    Eigen::Vector3f trueGridLocation = gridLocation.array() - 0.5f;
+    // Substract 0.5 since, grid index (x,y,z) stores distance value for center (x,y,z)+(0.5,0.5,0.5)
+    Eigen::Vector3d trueGridLocation = gridLocation.array() - 0.5;
     // Check if trueGridLocation is in the grid
     if ((gridLocation.array() < 0.0f).any() ||
-        (gridLocation.array() >= m_gridSize.array().cast<float>()).any())
-        return Eigen::Vector3f::Zero();
+        (gridLocation.array() >= m_gridSize.array().cast<double>()).any())
+        return Eigen::Vector3d::Zero();
 
-    const Eigen::Vector3f forwardDiffDelta[3] = {Eigen::Vector3f(1, 0, 0),
-                                                 Eigen::Vector3f(0, 1, 0),
-                                                 Eigen::Vector3f(0, 0, 1)};
+    const Eigen::Vector3d forwardDiffDelta[3] = {Eigen::Vector3d(1, 0, 0),
+                                                 Eigen::Vector3d(0, 1, 0),
+                                                 Eigen::Vector3d(0, 0, 1)};
 
-    Eigen::Vector3f gradient(0, 0, 0);
+    Eigen::Vector3d gradient(0, 0, 0);
     // getDistance will take care of substracting 0.5, so pass gridLocation below
     for (size_t i = 0; i < 3; i++)
     {
@@ -681,10 +681,10 @@ Eigen::Vector3f SDF::computeDistanceGradient(const Eigen::Vector3f &gridLocation
 void SDF::testComputeDistanceGradient()
 {
     // Since interpolation is used, analytic function f to test should be linear
-    float voxelSize = 0.5;
-    Eigen::Vector3f min3dLoc(0, 0, 0);
-    Eigen::Vector3f max3dLoc(8, 8, 8);
-    float unknownClipDistance = 10;
+    double voxelSize = 0.5;
+    Eigen::Vector3d min3dLoc(0, 0, 0);
+    Eigen::Vector3d max3dLoc(8, 8, 8);
+    double unknownClipDistance = 10;
     SDF testSdf(voxelSize, min3dLoc, max3dLoc, UnknownClipDistance);
     // cout << testSdf.m_voxelGridTSDF.size() << endl;
     for (int z = 0; z < testSdf.m_gridSize(2); z++)
@@ -710,9 +710,9 @@ void SDF::testComputeDistanceGradient()
             {
                 for (int i = 0; i < 10; i++)
                 {
-                    float delta = i / 10.0f;
-                    Eigen::Vector3f gridLocation(x + 0.5f + delta, y + 0.5f - delta, z + 0.5f - delta);
-                    Eigen::Vector3f actualDistanceGradient = testSdf.computeDistanceGradient(gridLocation);
+                    double delta = i / 10.0f;
+                    Eigen::Vector3d gridLocation(x + 0.5 + delta, y + 0.5 - delta, z + 0.5 - delta);
+                    Eigen::Vector3d actualDistanceGradient = testSdf.computeDistanceGradient(gridLocation);
                     // cout << x << ',' << y << ',' << z << ": Expected: 2, 2, -2, Actual" << actualDistanceGradient.transpose() << endl;
                     assert(fabs(actualDistanceGradient(0) - 1) < epsilon &&
                            fabs(actualDistanceGradient(1) - 1) < epsilon &&
@@ -723,15 +723,15 @@ void SDF::testComputeDistanceGradient()
     }
 }
 
-Eigen::Vector3f SDF::computeDistanceGradient(const Eigen::Vector3i &spatialIndex,
+Eigen::Vector3d SDF::computeDistanceGradient(const Eigen::Vector3i &spatialIndex,
                                              const DisplacementField *displacementField) const
 {
-    Eigen::Vector3f gridLocation = spatialIndex.cast<float>() + Eigen::Vector3f(0.5f, 0.5f, 0.5f);
-    const Eigen::Vector3f forwardDiffDelta[3] = {deltaSize * Eigen::Vector3f(1, 0, 0),
-                                                 deltaSize * Eigen::Vector3f(0, 1, 0),
-                                                 deltaSize * Eigen::Vector3f(0, 0, 1)};
+    Eigen::Vector3d gridLocation = spatialIndex.cast<double>() + Eigen::Vector3d(0.5, 0.5, 0.5);
+    const Eigen::Vector3d forwardDiffDelta[3] = {deltaSize * Eigen::Vector3d(1, 0, 0),
+                                                 deltaSize * Eigen::Vector3d(0, 1, 0),
+                                                 deltaSize * Eigen::Vector3d(0, 0, 1)};
 
-    Eigen::Vector3f gradient(0, 0, 0);
+    Eigen::Vector3d gradient(0, 0, 0);
     // getDistance will take care of substracting 0.5, so pass gridLocation below
     gradient(0) = getDistancef(gridLocation + forwardDiffDelta[0], displacementField) -
                   getDistancef(gridLocation - forwardDiffDelta[0], displacementField);
@@ -743,38 +743,38 @@ Eigen::Vector3f SDF::computeDistanceGradient(const Eigen::Vector3i &spatialIndex
     return gradient / (2 * deltaSize);
 }
 
-Eigen::Matrix3f SDF::computeDistanceHessian(const Eigen::Vector3f &gridLocation) const
+Eigen::Matrix3d SDF::computeDistanceHessian(const Eigen::Vector3d &gridLocation) const
 {
-    Eigen::Vector3f trueGridLocation = gridLocation.array() - 0.5f;
+    Eigen::Vector3d trueGridLocation = gridLocation.array() - 0.5;
 
     // Check if trueGridLocation is in the grid
     if ((trueGridLocation.array() < 0.0f).any() ||
-        (trueGridLocation.array() >= m_gridSize.array().cast<float>()).any())
-        return Eigen::Matrix3f::Zero();
+        (trueGridLocation.array() >= m_gridSize.array().cast<double>()).any())
+        return Eigen::Matrix3d::Zero();
 
     // ToDo: Optimize - Ideally compute Gradient for whole SDF grid and the hessian of whole SDF grid. Reduce the repeat computation
-    float fxyz = getDistance(gridLocation);
-    float fxplus2yz = getDistance(gridLocation + deltaSize * Eigen::Vector3f(2, 0, 0));
-    float fxminus2yz = getDistance(gridLocation + deltaSize * Eigen::Vector3f(-2, 0, 0));
-    float fxyplus2z = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, 2, 0));
-    float fxyminus2z = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, -2, 0));
-    float fxyzplus2 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, 0, 2));
-    float fxyzminus2 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, 0, -2));
-    float fxplus1yzplus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(1, 0, 1));
-    float fxminus1yzplus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(-1, 0, 1));
-    float fxyplus1zplus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, 1, 1));
-    float fxyminus1zplus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, -1, 1));
-    float fxplus1yplus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3f(1, 1, 0));
-    float fxminus1yplus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3f(-1, 1, 0));
-    float fxminus1yzminus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(-1, 0, -1));
-    float fxplus1yzminus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(1, 0, -1));
-    float fxyminus1zminus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, -1, -1));
-    float fxyplus1zminus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, 1, -1));
-    float fxminus1yminus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3f(-1, -1, 0));
-    float fxplus1yminus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3f(1, -1, 0));
+    double fxyz = getDistance(gridLocation);
+    double fxplus2yz = getDistance(gridLocation + deltaSize * Eigen::Vector3d(2, 0, 0));
+    double fxminus2yz = getDistance(gridLocation + deltaSize * Eigen::Vector3d(-2, 0, 0));
+    double fxyplus2z = getDistance(gridLocation + deltaSize * Eigen::Vector3d(0, 2, 0));
+    double fxyminus2z = getDistance(gridLocation + deltaSize * Eigen::Vector3d(0, -2, 0));
+    double fxyzplus2 = getDistance(gridLocation + deltaSize * Eigen::Vector3d(0, 0, 2));
+    double fxyzminus2 = getDistance(gridLocation + deltaSize * Eigen::Vector3d(0, 0, -2));
+    double fxplus1yzplus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3d(1, 0, 1));
+    double fxminus1yzplus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3d(-1, 0, 1));
+    double fxyplus1zplus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3d(0, 1, 1));
+    double fxyminus1zplus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3d(0, -1, 1));
+    double fxplus1yplus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3d(1, 1, 0));
+    double fxminus1yplus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3d(-1, 1, 0));
+    double fxminus1yzminus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3d(-1, 0, -1));
+    double fxplus1yzminus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3d(1, 0, -1));
+    double fxyminus1zminus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3d(0, -1, -1));
+    double fxyplus1zminus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3d(0, 1, -1));
+    double fxminus1yminus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3d(-1, -1, 0));
+    double fxplus1yminus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3d(1, -1, 0));
 
-    float fxx, fyy, fzz, fxy, fxz, fyz;
-    float denominator = (4 * deltaSize * deltaSize); // 4h^2, where h is step size.
+    double fxx, fyy, fzz, fxy, fxz, fyz;
+    double denominator = (4 * deltaSize * deltaSize); // 4h^2, where h is step size.
     fxx = (fxplus2yz - 2 * fxyz + fxminus2yz);
     fyy = (fxyplus2z - 2 * fxyz + fxyminus2z);
     fzz = (fxyzplus2 - 2 * fxyz + fxyzminus2);
@@ -782,7 +782,7 @@ Eigen::Matrix3f SDF::computeDistanceHessian(const Eigen::Vector3f &gridLocation)
     fyz = (fxyplus1zplus1 + fxyminus1zminus1 - fxyplus1zminus1 - fxyminus1zplus1);
     fxy = (fxplus1yplus1z + fxminus1yminus1z - fxplus1yminus1z - fxminus1yplus1z);
 
-    Eigen::Matrix3f hessian;
+    Eigen::Matrix3d hessian;
     hessian(0, 0) = fxx;
     hessian(1, 1) = fyy;
     hessian(2, 2) = fzz;
@@ -790,17 +790,17 @@ Eigen::Matrix3f SDF::computeDistanceHessian(const Eigen::Vector3f &gridLocation)
     hessian(0, 2) = hessian(2, 0) = fxz;
     hessian(1, 2) = hessian(2, 1) = fyz;
 
-    // Dividing by denominator causes floating precision errors if
+    // Dividing by denominator causes floating precision errors
     return hessian / denominator;
 }
 
 void SDF::testComputeDistanceHessian()
 {
     // Since interpolation is used, analytic function f to test should be linear
-    float voxelSize = 0.5;
-    Eigen::Vector3f min3dLoc(0, 0, 0);
-    Eigen::Vector3f max3dLoc(8, 8, 8);
-    float unknownClipDistance = 10;
+    double voxelSize = 0.5;
+    Eigen::Vector3d min3dLoc(0, 0, 0);
+    Eigen::Vector3d max3dLoc(8, 8, 8);
+    double unknownClipDistance = 10;
     SDF testSdf(voxelSize, min3dLoc, max3dLoc, UnknownClipDistance);
     // cout << testSdf.m_voxelGridTSDF.size() << endl;
     for (int z = 0; z < testSdf.m_gridSize(2); z++)
@@ -826,9 +826,9 @@ void SDF::testComputeDistanceHessian()
             {
                 for (int i = 0; i < 10; i++) // Hessian looks 2 steps away, and thus we will cross the boundary for
                 {
-                    float delta = i * voxelSize / 10.0f;
-                    Eigen::Vector3f gridLocation(x + 0.5f + delta, y + 0.5f - delta, z + 0.5f - delta);
-                    Eigen::Matrix3f actualDistanceHessian = testSdf.computeDistanceHessian(gridLocation);
+                    double delta = i * voxelSize / 10.0f;
+                    Eigen::Vector3d gridLocation(x + 0.5 + delta, y + 0.5 - delta, z + 0.5 - delta);
+                    Eigen::Matrix3d actualDistanceHessian = testSdf.computeDistanceHessian(gridLocation);
                     // cout << x << ',' << y << ',' << z << "," << i << ": Expected: Zero Matrix, Actually isZero " << actualDistanceHessian << endl;
                     if (!actualDistanceHessian.isZero(1e-2))
                         actualDistanceHessian = testSdf.computeDistanceHessian(gridLocation);
@@ -839,33 +839,33 @@ void SDF::testComputeDistanceHessian()
     }
 }
 
-Eigen::Matrix3f SDF::computeDistanceHessian(const Eigen::Vector3i &spatialIndex,
+Eigen::Matrix3d SDF::computeDistanceHessian(const Eigen::Vector3i &spatialIndex,
                                             const DisplacementField *displacementField) const
 {
-    Eigen::Vector3f gridLocation = spatialIndex.cast<float>() + Eigen::Vector3f(0.5f, 0.5f, 0.5f);
+    Eigen::Vector3d gridLocation = spatialIndex.cast<double>() + Eigen::Vector3d(0.5, 0.5, 0.5);
     // ToDo: Optimize
-    float fxyz = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(0, 0, 0), displacementField);
-    float fxplus2yz = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(2, 0, 0), displacementField);
-    float fxminus2yz = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(-2, 0, 0), displacementField);
-    float fxyplus2z = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(0, 2, 0), displacementField);
-    float fxyminus2z = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(0, -2, 0), displacementField);
-    float fxyzplus2 = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(0, 0, 2), displacementField);
-    float fxyzminus2 = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(0, 0, -2), displacementField);
-    float fxplus1yzplus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(1, 0, 1), displacementField);
-    float fxminus1yzplus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(-1, 0, 1), displacementField);
-    float fxyplus1zplus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(0, 1, 1), displacementField);
-    float fxyminus1zplus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(0, -1, 1), displacementField);
-    float fxplus1yplus1z = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(1, 1, 0), displacementField);
-    float fxminus1yplus1z = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(-1, 1, 0), displacementField);
-    float fxminus1yzminus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(-1, 0, -1), displacementField);
-    float fxplus1yzminus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(1, 0, -1), displacementField);
-    float fxyminus1zminus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(0, -1, -1), displacementField);
-    float fxyplus1zminus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(0, 1, -1), displacementField);
-    float fxminus1yminus1z = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(-1, -1, 0), displacementField);
-    float fxplus1yminus1z = getDistancef(gridLocation + deltaSize * Eigen::Vector3f(1, -1, 0), displacementField);
+    double fxyz = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(0, 0, 0), displacementField);
+    double fxplus2yz = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(2, 0, 0), displacementField);
+    double fxminus2yz = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(-2, 0, 0), displacementField);
+    double fxyplus2z = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(0, 2, 0), displacementField);
+    double fxyminus2z = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(0, -2, 0), displacementField);
+    double fxyzplus2 = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(0, 0, 2), displacementField);
+    double fxyzminus2 = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(0, 0, -2), displacementField);
+    double fxplus1yzplus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(1, 0, 1), displacementField);
+    double fxminus1yzplus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(-1, 0, 1), displacementField);
+    double fxyplus1zplus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(0, 1, 1), displacementField);
+    double fxyminus1zplus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(0, -1, 1), displacementField);
+    double fxplus1yplus1z = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(1, 1, 0), displacementField);
+    double fxminus1yplus1z = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(-1, 1, 0), displacementField);
+    double fxminus1yzminus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(-1, 0, -1), displacementField);
+    double fxplus1yzminus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(1, 0, -1), displacementField);
+    double fxyminus1zminus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(0, -1, -1), displacementField);
+    double fxyplus1zminus1 = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(0, 1, -1), displacementField);
+    double fxminus1yminus1z = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(-1, -1, 0), displacementField);
+    double fxplus1yminus1z = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(1, -1, 0), displacementField);
 
-    float fxx, fyy, fzz, fxy, fxz, fyz;
-    float denominator = (4 * deltaSize * deltaSize); // 4h^2, where h is step size.
+    double fxx, fyy, fzz, fxy, fxz, fyz;
+    double denominator = (4 * deltaSize * deltaSize); // 4h^2, where h is step size.
     fxx = (fxplus2yz - 2 * fxyz + fxminus2yz);
     fyy = (fxyplus2z - 2 * fxyz + fxyminus2z);
     fzz = (fxyzplus2 - 2 * fxyz + fxyzminus2);
@@ -875,7 +875,7 @@ Eigen::Matrix3f SDF::computeDistanceHessian(const Eigen::Vector3i &spatialIndex,
 
     // Dividing by denominator causes floating precision errors.
 
-    Eigen::Matrix3f hessian;
+    Eigen::Matrix3d hessian;
     hessian(0, 0) = fxx;
     hessian(1, 1) = fyy;
     hessian(2, 2) = fzz;

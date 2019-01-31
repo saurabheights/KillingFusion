@@ -8,9 +8,9 @@
 #include <string>
 
 // SDF Generation Parameters
-const extern float VoxelSize;
-const extern float UnknownClipDistance;
-const extern float MaxSurfaceVoxelDistance;
+const extern double VoxelSize;
+const extern double UnknownClipDistance;
+const extern double MaxSurfaceVoxelDistance;
 const extern bool FUSE_BY_MERGE; // Always set to true. False is not required.
 // Dataset and Pipeline to Use
 
@@ -37,7 +37,7 @@ const extern DEFORMABLE_DATASET datasetType;
 const extern int numImageFiles[2];
 const extern std::string imageDir[2];
 const extern std::string intrinsicParamsFile;
-const extern float datasetDepthMinMaxValues[2][2];
+const extern double datasetDepthMinMaxValues[2][2];
 const extern std::string outputDir[2];
 
 /**
@@ -53,24 +53,24 @@ const extern bool UseTrustStrategy; // Only used when working only with data ene
 
 const extern int KILLING_MAX_ITERATIONS;
 
-const extern float deltaSize; // Step Size in Voxel unit for central difference.
+const extern double deltaSize; // Step Size in Voxel unit for central difference.
 
 // learning rates for gradient descent
-const extern float alpha;
+const extern double alpha;
 
 // Convergence criterion - Stop when gradient < threshold - Used only when UpdateAllVoxelsInEachIter is false.
-const extern float threshold;
+const extern double threshold;
 
 // Killing condition weights
-const extern float omegaKilling;
+const extern double omegaKilling;
 
 // Killing - Rigidity factor
-const extern float gammaKilling;
+const extern double gammaKilling;
 
 // Level-set condition weights
-const extern float omegaLevelSet;
+const extern double omegaLevelSet;
 
 // Level-set - Prevents division by zero
-const extern float epsilon;
+const extern double epsilon;
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_CONFIG_H

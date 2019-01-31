@@ -16,17 +16,17 @@
 class SDF
 {
   Eigen::Vector3i m_gridSize;
-  Eigen::Vector3f m_min3dLoc;
-  Eigen::Vector3f m_max3dLoc;
+  Eigen::Vector3d m_min3dLoc;
+  Eigen::Vector3d m_max3dLoc;
   int m_totalNumberOfVoxels;
   // ToDo - Change to vector of vector of vector.
   // Makes notation much simpler as well as reduces the computation of indices.
-  std::vector<float> m_voxelGridTSDF;
+  std::vector<double> m_voxelGridTSDF;
   std::vector<long> m_voxelGridWeight;
-  float m_voxelSize; // ToDo: Remove this m_voxelSize. Use directly from config.h
+  double m_voxelSize; // ToDo: Remove this m_voxelSize. Use directly from config.h
   Eigen::Vector3i m_gridSpacingPerAxis;
-  Eigen::Vector3f m_bound;
-  float m_unknownClipDistance;
+  Eigen::Vector3d m_bound;
+  double m_unknownClipDistance;
 
   void computeVoxelGridSize();
   void allocateMemoryForSDF();
@@ -34,10 +34,10 @@ class SDF
 
 public:
   // ToDo: Remove use of truncationDistanceInVoxelSize and add a method getTruncatedDistance.
-  SDF(float _voxelSize,
-      Eigen::Vector3f _min3dLoc,
-      Eigen::Vector3f _max3dLoc,
-      float unknownClipDistance);
+  SDF(double _voxelSize,
+      Eigen::Vector3d _min3dLoc,
+      Eigen::Vector3d _max3dLoc,
+      double unknownClipDistance);
 
   // Creates a new SDF of same size as copy. Voxel weight and distance is not copied.
   SDF(const SDF &copy)
@@ -48,8 +48,8 @@ public:
 
   ~SDF();
 
-  static std::vector<SDF> getDataEnergyTestSample(float _voxelSize,
-                                                  float unknownClipDistance);
+  static std::vector<SDF> getDataEnergyTestSample(double _voxelSize,
+                                                  double unknownClipDistance);
 
   /**
      * Main function to merge depth frames into the SDF volume.
@@ -61,10 +61,10 @@ public:
      * @param maxDepth
      */
   void integrateDepthFrame(cv::Mat depthFrame,
-                           Eigen::Matrix4f depthFrameC2WPose,
-                           Eigen::Matrix3f depthIntrinsicMatrix,
-                           float minDepth,
-                           float maxDepth);
+                           Eigen::Matrix4d depthFrameC2WPose,
+                           Eigen::Matrix3d depthIntrinsicMatrix,
+                           double minDepth,
+                           double maxDepth);
 
   /**
    * Provides an easy way to check if an index(0-index) is within bound of the SDF grid.
@@ -75,12 +75,12 @@ public:
   /**
    * Get SDF distance value at spatial index(0-indexed).
    */
-  float getDistanceAtIndex(const Eigen::Vector3i &gridSpatialIndex) const;
+  double getDistanceAtIndex(const Eigen::Vector3i &gridSpatialIndex) const;
 
   /**
    * Get SDF distance value at spatial index(0-indexed).
    */
-  float getDistanceAtIndex(int x, int y, int z) const;
+  double getDistanceAtIndex(int x, int y, int z) const;
 
   /**
    * Get SDF weight value at spatial index.
@@ -95,44 +95,44 @@ public:
   /**
    * Get SDF distance value at grid location. Grid Location unit is voxel size.
    */
-  float getDistance(const Eigen::Vector3f &gridLocation) const;
+  double getDistance(const Eigen::Vector3d &gridLocation) const;
 
   static void testGetDistance();
 
   /**
    * Get distance value at grid location of displaced SDF. Grid Location unit is voxel size.
    */
-  float getDistance(const Eigen::Vector3i &spatialIndex,
+  double getDistance(const Eigen::Vector3i &spatialIndex,
                     const DisplacementField *displacementField) const;
 
-  float getDistancef(const Eigen::Vector3f &gridLocation,
+  double getDistancef(const Eigen::Vector3d &gridLocation,
                     const DisplacementField *displacementField) const;
 
   /**
    * Get weight value at grid location of SDF. Grid Location unit is voxel size.
    */
-  float getWeight(const Eigen::Vector3f &gridLocation) const;
+  double getWeight(const Eigen::Vector3d &gridLocation) const;
 
   static void testGetWeight();
 
-  float getWeight(const Eigen::Vector3i &spatialIndex,
+  double getWeight(const Eigen::Vector3i &spatialIndex,
                   const DisplacementField *displacementField) const;
 
   /**
    * This function computes distance gradient at any grid location. Grid Location unit is voxel size.
    */
-  Eigen::Vector3f computeDistanceGradient(const Eigen::Vector3f &gridLocation) const;
+  Eigen::Vector3d computeDistanceGradient(const Eigen::Vector3d &gridLocation) const;
 
   static void testComputeDistanceGradient();
-  Eigen::Vector3f computeDistanceGradient(const Eigen::Vector3i &spatialIndex,
+  Eigen::Vector3d computeDistanceGradient(const Eigen::Vector3i &spatialIndex,
                                           const DisplacementField *displacementField) const;
 
   /**
    * This function computes distance hessian at any grid location. Grid Location unit is voxel size.
    */
-  Eigen::Matrix3f computeDistanceHessian(const Eigen::Vector3f &gridLocation) const;
+  Eigen::Matrix3d computeDistanceHessian(const Eigen::Vector3d &gridLocation) const;
 
-  Eigen::Matrix3f computeDistanceHessian(const Eigen::Vector3i &spatialIndex,
+  Eigen::Matrix3d computeDistanceHessian(const Eigen::Vector3i &spatialIndex,
                                          const DisplacementField *displacementField) const;
 
   static void testComputeDistanceHessian();
@@ -177,18 +177,18 @@ public:
    * @param minimumWeightThreshold - Not used
    */
   void dumpToBinFile(std::string outputFilePath,
-                     float truncationDistanceInVoxelSizeUnit,
-                     float minimumWeightThreshold) const;
+                     double truncationDistanceInVoxelSizeUnit,
+                     double minimumWeightThreshold) const;
 
   /**
    * Getters
    */
-  Eigen::Vector3f getMin3dLoc() const
+  Eigen::Vector3d getMin3dLoc() const
   {
     return m_min3dLoc;
   };
 
-  Eigen::Vector3f getMax3dLoc() const
+  Eigen::Vector3d getMax3dLoc() const
   {
     return m_max3dLoc;
   };

@@ -6,7 +6,7 @@
 
 #include "Eigen/Eigen"
 
-typedef Eigen::Vector3f Vertex;
+typedef Eigen::Vector3d Vertex;
 
 struct Triangle
 {
@@ -89,21 +89,21 @@ class SimpleMesh
         return m_triangles;
     }
 
-    Eigen::Vector3f getMinLoc()
+    Eigen::Vector3d getMinLoc()
     {
-        Eigen::Vector3f minLoc = m_vertices[0];
+        Eigen::Vector3d minLoc = m_vertices[0];
         for (auto &&vertex : m_vertices)
         {
             minLoc = minLoc.cwiseMin(vertex);
         }
         return minLoc;
     }
-    
-    Eigen::Vector3f getMaxLoc()
+
+    Eigen::Vector3d getMaxLoc()
     {
-        
-        Eigen::Vector3f maxLoc = m_vertices[0];
-        for(auto&& vertex : m_vertices)
+
+        Eigen::Vector3d maxLoc = m_vertices[0];
+        for (auto &&vertex : m_vertices)
         {
             maxLoc = maxLoc.cwiseMax(vertex);
         }
@@ -171,14 +171,14 @@ class PointCloud
 
             for (unsigned int i = 0; i < n; i++)
             {
-                Eigen::Vector3f p(ps[3 * i + 0], ps[3 * i + 1], ps[3 * i + 2]);
+                Eigen::Vector3d p(ps[3 * i + 0], ps[3 * i + 1], ps[3 * i + 2]);
                 m_points.push_back(p);
             }
 
             is.read((char *)ps, 3 * sizeof(float) * n);
             for (unsigned int i = 0; i < n; i++)
             {
-                Eigen::Vector3f p(ps[3 * i + 0], ps[3 * i + 1], ps[3 * i + 2]);
+                Eigen::Vector3d p(ps[3 * i + 0], ps[3 * i + 1], ps[3 * i + 2]);
                 m_normals.push_back(p);
             }
 
@@ -192,7 +192,7 @@ class PointCloud
 
             for (unsigned int i = 0; i < n; i++)
             {
-                Eigen::Vector3f p((float)ps[3 * i + 0], (float)ps[3 * i + 1], (float)ps[3 * i + 2]);
+                Eigen::Vector3d p((float)ps[3 * i + 0], (float)ps[3 * i + 1], (float)ps[3 * i + 2]);
                 m_points.push_back(p);
             }
 
@@ -200,7 +200,7 @@ class PointCloud
 
             for (unsigned int i = 0; i < n; i++)
             {
-                Eigen::Vector3f p((float)ps[3 * i + 0], (float)ps[3 * i + 1], (float)ps[3 * i + 2]);
+                Eigen::Vector3d p((float)ps[3 * i + 0], (float)ps[3 * i + 1], (float)ps[3 * i + 2]);
                 m_normals.push_back(p);
             }
 
@@ -210,17 +210,17 @@ class PointCloud
         return true;
     }
 
-    std::vector<Eigen::Vector3f> &GetPoints()
+    std::vector<Eigen::Vector3d> &GetPoints()
     {
         return m_points;
     }
 
-    std::vector<Eigen::Vector3f> &GetNormals()
+    std::vector<Eigen::Vector3d> &GetNormals()
     {
         return m_normals;
     }
 
-    unsigned int GetClosestPoint(Eigen::Vector3f &p)
+    unsigned int GetClosestPoint(Eigen::Vector3d &p)
     {
         unsigned int idx = 0;
 
@@ -241,8 +241,8 @@ class PointCloud
     }
 
   private:
-    std::vector<Eigen::Vector3f> m_points;
-    std::vector<Eigen::Vector3f> m_normals;
+    std::vector<Eigen::Vector3d> m_points;
+    std::vector<Eigen::Vector3d> m_normals;
 };
 
 #endif // SIMPLE_MESH_H

@@ -33,7 +33,7 @@ class KillingFusion
    * ToDo: Fix this Single SDF for all frames issue.
    * Computes Bound of SDF for all the frames. 
    */
-  std::pair<Eigen::Vector3f, Eigen::Vector3f> computeBounds(int w, int h, float minDepth, float maxDepth);
+  std::pair<Eigen::Vector3d, Eigen::Vector3d> computeBounds(int w, int h, double minDepth, double maxDepth);
   DisplacementField *createZeroDisplacementField(const SDF &sdf);
 
   /**
@@ -42,17 +42,17 @@ class KillingFusion
   void computeDisplacementField(const SDF *src,
                                 const SDF *dest,
                                 DisplacementField *srcToDest);
-  Eigen::Vector3f computeEnergyGradient(const SDF *src,
+  Eigen::Vector3d computeEnergyGradient(const SDF *src,
                                         const SDF *dest,
                                         const DisplacementField *srcDisplacementField,
                                         const Eigen::Vector3i &spatialIndex);
-  Eigen::Vector3f computeDataEnergyGradient(const SDF *src,
+  Eigen::Vector3d computeDataEnergyGradient(const SDF *src,
                                             const SDF *dest,
                                             const DisplacementField *srcDisplacementField,
                                             const Eigen::Vector3i &spatialIndex);
-  Eigen::Vector3f computeKillingEnergyGradient(const DisplacementField *srcDisplacementField,
+  Eigen::Vector3d computeKillingEnergyGradient(const DisplacementField *srcDisplacementField,
                                                const Eigen::Vector3i &spatialIndex);
-  Eigen::Vector3f computeLevelSetEnergyGradient(const SDF *src,
+  Eigen::Vector3d computeLevelSetEnergyGradient(const SDF *src,
                                                 const SDF *dest,
                                                 const DisplacementField *srcDisplacementField,
                                                 const Eigen::Vector3i &spatialIndex);

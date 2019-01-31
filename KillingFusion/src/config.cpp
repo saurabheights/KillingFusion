@@ -1,9 +1,9 @@
 #include <config.h>
 
 // SDF Generation Parameters
-const float VoxelSize = 0.008f;
-const float UnknownClipDistance = VoxelSize * 4;
-const float MaxSurfaceVoxelDistance = VoxelSize * 10;
+const double VoxelSize = 0.012f;
+const double UnknownClipDistance = VoxelSize * 4;
+const double MaxSurfaceVoxelDistance = VoxelSize * 10;
 const bool FUSE_BY_MERGE = true;
 
 // Dataset and Pipeline to Use
@@ -13,9 +13,9 @@ const DEFORMABLE_DATASET datasetType = SNOOPY;
 const int numImageFiles[2] = {447, 630};
 const std::string imageDir[2] = {std::string("Duck/"), std::string("Snoopy/")};
 const std::string intrinsicParamsFile = "intrinsics_kinect1.txt";
-const float datasetDepthMinMaxValues[2][2] = {
+const double datasetDepthMinMaxValues[2][2] = {
     {0.0497470f, 3.66115f}, // 3.66115f
-    {0.0495164f, 1.2f},     // 3.40335f - True value changed, since to remove pixels of wall in background. This reduces grid size substantially and makes KF fast.
+    {0.0495164f, 1.2f},     // 3.40335f - True value changed to remove pixels of wall in background. This reduces grid size substantially and makes KF fast.
 };
 
 const std::string outputDir[2] = {"Duck/", "Snoopy/"};
@@ -26,7 +26,7 @@ const bool UpdateAllVoxelsInEachIter = true;
 const bool UsePreviousIterationDeformationField = false; // If true, previous iteration displacement field is used for computing LevelSet Energy and KillingEnergy. 
 const bool UseTrustStrategy = false; // Only used when working only with data energy. Helps in finding which alpha to use for voxel data energy gradient.
 // Do not reduce, causes floating point precision errors in SDF::computeDistanceHessian
-const float deltaSize = 0.1; // Step Size in Voxel unit for central difference.
+const double deltaSize = 0.1; // Step Size in Voxel unit for central difference.
 
 
 /**
@@ -40,18 +40,18 @@ const float deltaSize = 0.1; // Step Size in Voxel unit for central difference.
  * of 8 mm for human-sized subjects and 4 mm for smaller-scale ones.
  */
 const int KILLING_MAX_ITERATIONS = 256;
-const float threshold = 0.0001f;
+const double threshold = 0.0001;
 
-const float alpha = 0.01f;
+const double alpha = 0.01;
 
 // Killing weights
-const float omegaKilling = 0.2f;
+const double omegaKilling = 0.2;
 
 // Killing - Purity
-const float gammaKilling = 0.1f;
+const double gammaKilling = 0.1;
 
 // Level-set condition weights
-const float omegaLevelSet = 0.1f;
+const double omegaLevelSet = 0.1;
 
 // Level-set - Prevents division by zero
-const float epsilon = 0.00001f;
+const double epsilon = 0.00001;

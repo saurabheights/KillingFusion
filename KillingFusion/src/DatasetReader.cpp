@@ -16,7 +16,7 @@ DatasetReader::DatasetReader(const std::string DatasetRootDir)
 {
   m_imageDir = DatasetRootDir + imageDir[datasetType];
   m_numImageFiles = numImageFiles[datasetType];
-  std::vector<float> intrinsicParams = LoadMatrixFromFile(DatasetRootDir + intrinsicParamsFile, 3 * 3);
+  std::vector<double> intrinsicParams = LoadMatrixFromFile(DatasetRootDir + intrinsicParamsFile, 3 * 3);
   m_depthIntrinsicMatrix << intrinsicParams[0], intrinsicParams[1], intrinsicParams[2],
       intrinsicParams[3], intrinsicParams[4], intrinsicParams[5],
       intrinsicParams[6], intrinsicParams[7], intrinsicParams[8];
@@ -31,16 +31,16 @@ DatasetReader::DatasetReader(const std::string DatasetRootDir)
  *
  * @param filename The file to be read
  * @param M The number of elements in matrix
- * @return A vector of all the values read as float.
+ * @return A vector of all the values read as double.
  */
-std::vector<float> DatasetReader::LoadMatrixFromFile(std::string filename, int M)
+std::vector<double> DatasetReader::LoadMatrixFromFile(std::string filename, int M)
 {
-  std::vector<float> matrix;
+  std::vector<double> matrix;
   FILE *fp = fopen(filename.c_str(), "r");
   for (int i = 0; i < M; i++)
   {
-    float tmp;
-    int iret = fscanf(fp, "%f", &tmp);
+    double tmp;
+    int iret = fscanf(fp, "%lf", &tmp);
     matrix.push_back(tmp);
   }
   fclose(fp);
@@ -76,12 +76,12 @@ void DatasetReader::analyzeMinMaxDepthValues(const DEFORMABLE_DATASET dataset)
   if (dataset < 2) // Always true in current case.
   {
     // Using cached values
-    m_minMaxDepth = std::pair<float, float>(datasetDepthMinMaxValues[dataset][0],
+    m_minMaxDepth = std::pair<double, double>(datasetDepthMinMaxValues[dataset][0],
                                             datasetDepthMinMaxValues[dataset][1]);
     return;
   }
 
-  std::vector<float> minDepths, maxDepths;
+  std::vector<double> minDepths, maxDepths;
   minDepths.reserve(getNumImageFiles());
   maxDepths.reserve(getNumImageFiles());
 
@@ -91,13 +91,13 @@ void DatasetReader::analyzeMinMaxDepthValues(const DEFORMABLE_DATASET dataset)
     cv::Mat depthMat = cdoImages.at(1);
     int H = depthMat.rows;
     int W = depthMat.cols;
-    float min = std::numeric_limits<float>::max();
-    float max = std::numeric_limits<float>::min();
+    double min = std::numeric_limits<double>::max();
+    double max = std::numeric_limits<double>::min();
     for (int r = 0; r < H; ++r)
     {
       for (int c = 0; c < W; ++c)
       {
-        float depth = depthMat.at<float>(r, c);
+        double depth = depthMat.at<double>(r, c);
         // Ignore 0 values which represent invalid data
         if (min > depth && depth > 0)
         {
@@ -116,7 +116,7 @@ void DatasetReader::analyzeMinMaxDepthValues(const DEFORMABLE_DATASET dataset)
   std::sort(minDepths.begin(), minDepths.end());
   std::sort(maxDepths.begin(), maxDepths.end());
   std::cout << "Minimum and Maximum depth in all frames= " << minDepths.at(0) << " " << maxDepths.at(maxDepths.size() - 1) << std::endl;
-  m_minMaxDepth = std::pair<float, float>(minDepths.at(0), maxDepths.at(maxDepths.size() - 1));
+  m_minMaxDepth = std::pair<double, double>(minDepths.at(0), maxDepths.at(maxDepths.size() - 1));
 }
 
 cv::Mat DatasetReader::readDepthImage(std::string depthFilename)
@@ -129,8 +129,8 @@ cv::Mat DatasetReader::readDepthImage(std::string depthFilename)
     exit(-1);
   }
 
-  cv::Mat depthFloatImage(depthImage.size(), CV_32FC1);
-  depthImage.convertTo(depthFloatImage, CV_32FC1, 1.0 / 1000); // ToDo:  Move depthShift to config.h
+  cv::Mat depthFloatImage(depthImage.size(), CV_64FC1);
+  depthImage.convertTo(depthFloatImage, CV_64FC1, 1.0 / 1000); // Future tasks Move depthShift to config.h
   return depthFloatImage;
   // double minVal, maxVal;
   // cv::minMaxLoc(depthFloatImage, &minVal, &maxVal);
@@ -155,7 +155,7 @@ int DatasetReader::getDepthWidth()
   return m_depthWidth;
 }
 
-Eigen::Matrix3f DatasetReader::getDepthIntrinsicMatrix()
+Eigen::Matrix3d DatasetReader::getDepthIntrinsicMatrix()
 {
   return m_depthIntrinsicMatrix;
 }
