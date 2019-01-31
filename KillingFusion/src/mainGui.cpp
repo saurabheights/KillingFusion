@@ -79,10 +79,10 @@ void renderMesh(SimpleMesh *mesh)
     Vertex &v2 = vertices[triangle.idx2];
     // The negative sign is hack, since in SDF Z value increases inwards and in Opengl, its outwards. Somehow also affects y-sign.
     Vertex normal = (v1 - v0).cross(v2 - v1).normalized();
-    glNormal3fv(normal.data());
-    glVertex3fv(v0.data());
-    glVertex3fv(v1.data());
-    glVertex3fv(v2.data());
+    glNormal3dv(normal.data());
+    glVertex3dv(v0.data());
+    glVertex3dv(v1.data());
+    glVertex3dv(v2.data());
   }
   glEnd();
 }
