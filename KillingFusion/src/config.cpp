@@ -1,9 +1,9 @@
 #include <config.h>
 
 // SDF Generation Parameters
-const double VoxelSize = 0.012f;
+const double VoxelSize = 0.012;
 const double UnknownClipDistance = VoxelSize * 4;
-const double MaxSurfaceVoxelDistance = VoxelSize * 10;
+const double MaxSurfaceVoxelDistance = VoxelSize * 4;
 const bool FUSE_BY_MERGE = true;
 
 // Dataset and Pipeline to Use
@@ -14,8 +14,8 @@ const int numImageFiles[2] = {447, 630};
 const std::string imageDir[2] = {std::string("Duck/"), std::string("Snoopy/")};
 const std::string intrinsicParamsFile = "intrinsics_kinect1.txt";
 const double datasetDepthMinMaxValues[2][2] = {
-    {0.0497470f, 3.66115f}, // 3.66115f
-    {0.0495164f, 1.2f},     // 3.40335f - True value changed to remove pixels of wall in background. This reduces grid size substantially and makes KF fast.
+    {0.0497470, 1.2}, // 3.66115f
+    {0.0495164, 1.2},     // 3.40335f - True value changed to remove pixels of wall in background. This reduces grid size substantially and makes KF fast.
 };
 
 const std::string outputDir[2] = {"Duck/", "Snoopy/"};

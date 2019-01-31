@@ -153,7 +153,7 @@ double DisplacementField::computeKillingEnergy(double x, double y, double z) con
     if (!jacobian.array().isFinite().all())
     {
         cout << "Jacobian is infinite\n";
-        jacobian = computeJacobian(x, y, z); // To Debug
+        // jacobian = computeJacobian(x, y, z); // To Debug
         return 0.0;
     }
 
@@ -165,7 +165,7 @@ double DisplacementField::computeKillingEnergy(double x, double y, double z) con
     // Compute Damped Approximate Killing Vector Field
     double avkf = jacobianVec.dot(jacobianVec) + gammaKilling * jacobianTransposeVec.dot(jacobianVec);
     // return avkf;
-    return std::min(avkf, 25.0); // threshold to cutoff too high killing values, causes Nan in grad. Put this in config.cpp
+    return std::min(avkf, 0.01); // threshold to cutoff too high killing values, causes Nan in grad due to high displacement. Put this in config.cpp
 }
 
 void DisplacementField::testKillingEnergy()

@@ -263,7 +263,7 @@ void KillingFusion::computeDisplacementField(const SDF *src,
 
             // Check if srcGridLocation is near the Surface.
             double srcSdfDistance = src->getDistance(spatialIndex, srcToDest);
-            if (srcSdfDistance > MaxSurfaceVoxelDistance || srcSdfDistance < -UnknownClipDistance)
+            if (srcSdfDistance > MaxSurfaceVoxelDistance-epsilon || srcSdfDistance < -UnknownClipDistance)
               continue;
 
 #ifdef MY_DEBUG
@@ -409,13 +409,6 @@ Eigen::Vector3d KillingFusion::computeEnergyGradient(const SDF *src,
     killing_grad = computeKillingEnergyGradient(srcDisplacementField, spatialIndex) * omegaKilling;
   }
 
-  // cout << data_grad.norm() << " " << levelset_grad.norm() << "\n";
-  // ToDo: Normalize using max norm
-  // if (levelset_grad.norm() > 1)
-  // {
-  //   levelset_grad.normalize();
-  // levelset_grad *= omegaLevelSet;
-  // }
 
   return (data_grad + killing_grad + levelset_grad);
 }
@@ -445,21 +438,13 @@ Eigen::Vector3d KillingFusion::computeLevelSetEnergyGradient(const SDF *src,
                                                              const DisplacementField *srcDisplacementField,
                                                              const Eigen::Vector3i &spatialIndex)
 {
-  // Compute first distance gradient.and hessian
+  // Compute distance gradient
   Eigen::Vector3d grad = src->computeDistanceGradient(spatialIndex, srcDisplacementField);
-
-  // double srcPointDistance = src->getDistance(spatialIndex, srcDisplacementField);
-  // double destPointDistance = dest->getDistanceAtIndex(spatialIndex);
-  // Eigen::Vector3d dataEnergy = (srcPointDistance - destPointDistance) / VoxelSize* grad.array();
 
   // Compute Hessian
   Eigen::Matrix3d hessian = src->computeDistanceHessian(spatialIndex, srcDisplacementField);
 
   Eigen::Vector3d levelSetGrad = hessian * grad * (grad.norm() - 1) / (grad.norm() + epsilon);
-  // if (levelSetGrad.norm() > 1)
-  // {
-  //   // cout << levelSetGrad << endl;
-  // }
 
   return levelSetGrad;
 }

@@ -774,7 +774,6 @@ Eigen::Matrix3d SDF::computeDistanceHessian(const Eigen::Vector3d &gridLocation)
     double fxplus1yminus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3d(1, -1, 0));
 
     double fxx, fyy, fzz, fxy, fxz, fyz;
-    double denominator = (4 * deltaSize * deltaSize); // 4h^2, where h is step size.
     fxx = (fxplus2yz - 2 * fxyz + fxminus2yz);
     fyy = (fxyplus2z - 2 * fxyz + fxyminus2z);
     fzz = (fxyzplus2 - 2 * fxyz + fxyzminus2);
@@ -790,7 +789,8 @@ Eigen::Matrix3d SDF::computeDistanceHessian(const Eigen::Vector3d &gridLocation)
     hessian(0, 2) = hessian(2, 0) = fxz;
     hessian(1, 2) = hessian(2, 1) = fyz;
 
-    // Dividing by denominator causes floating precision errors
+    // Dividing by denominator in real distance causes floating precision errors. Keep unit in voxel size.
+    double denominator = (4 * deltaSize * deltaSize); // 4h^2, where h is step size.
     return hessian / denominator;
 }
 
@@ -830,9 +830,9 @@ void SDF::testComputeDistanceHessian()
                     Eigen::Vector3d gridLocation(x + 0.5 + delta, y + 0.5 - delta, z + 0.5 - delta);
                     Eigen::Matrix3d actualDistanceHessian = testSdf.computeDistanceHessian(gridLocation);
                     // cout << x << ',' << y << ',' << z << "," << i << ": Expected: Zero Matrix, Actually isZero " << actualDistanceHessian << endl;
-                    if (!actualDistanceHessian.isZero(1e-2))
+                    if (!actualDistanceHessian.isZero(1e-4))
                         actualDistanceHessian = testSdf.computeDistanceHessian(gridLocation);
-                    assert(actualDistanceHessian.isZero(1e-2) && "Whoops, check SDF::testComputeDistanceGradient");
+                    assert(actualDistanceHessian.isZero(1e-4) && "Whoops, check SDF::testComputeDistanceGradient");
                 }
             }
         }
@@ -865,15 +865,12 @@ Eigen::Matrix3d SDF::computeDistanceHessian(const Eigen::Vector3i &spatialIndex,
     double fxplus1yminus1z = getDistancef(gridLocation + deltaSize * Eigen::Vector3d(1, -1, 0), displacementField);
 
     double fxx, fyy, fzz, fxy, fxz, fyz;
-    double denominator = (4 * deltaSize * deltaSize); // 4h^2, where h is step size.
     fxx = (fxplus2yz - 2 * fxyz + fxminus2yz);
     fyy = (fxyplus2z - 2 * fxyz + fxyminus2z);
     fzz = (fxyzplus2 - 2 * fxyz + fxyzminus2);
     fxz = (fxplus1yzplus1 + fxminus1yzminus1 - fxplus1yzminus1 - fxminus1yzplus1);
     fyz = (fxyplus1zplus1 + fxyminus1zminus1 - fxyplus1zminus1 - fxyminus1zplus1);
     fxy = (fxplus1yplus1z + fxminus1yminus1z - fxplus1yminus1z - fxminus1yplus1z);
-
-    // Dividing by denominator causes floating precision errors.
 
     Eigen::Matrix3d hessian;
     hessian(0, 0) = fxx;
@@ -882,5 +879,8 @@ Eigen::Matrix3d SDF::computeDistanceHessian(const Eigen::Vector3i &spatialIndex,
     hessian(0, 1) = hessian(1, 0) = fxy;
     hessian(0, 2) = hessian(2, 0) = fxz;
     hessian(1, 2) = hessian(2, 1) = fyz;
+
+    // Dividing by denominator in real distance causes floating precision errors. Keep unit in voxel size.
+    double denominator = (4 * deltaSize * deltaSize); // 4h^2, where h is step size.
     return hessian / denominator;
 }
