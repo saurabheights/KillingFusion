@@ -713,7 +713,7 @@ void SDF::testComputeDistanceGradient()
                     float delta = i / 10.0f;
                     Eigen::Vector3f gridLocation(x + 0.5f + delta, y + 0.5f - delta, z + 0.5f - delta);
                     Eigen::Vector3f actualDistanceGradient = testSdf.computeDistanceGradient(gridLocation);
-                    // cout << x << ',' << y << ',' << z << ": Expected: 1, 1, -1, Actual" << actualDistanceGradient.transpose() << endl;
+                    // cout << x << ',' << y << ',' << z << ": Expected: 2, 2, -2, Actual" << actualDistanceGradient.transpose() << endl;
                     assert(fabs(actualDistanceGradient(0) - 1) < epsilon &&
                            fabs(actualDistanceGradient(1) - 1) < epsilon &&
                            fabs(actualDistanceGradient(2) + 1) < epsilon && "Whoops, check SDF::testComputeDistanceGradient");
@@ -748,36 +748,36 @@ Eigen::Matrix3f SDF::computeDistanceHessian(const Eigen::Vector3f &gridLocation)
     Eigen::Vector3f trueGridLocation = gridLocation.array() - 0.5f;
 
     // Check if trueGridLocation is in the grid
-    if ((gridLocation.array() < 0.0f).any() ||
-        (gridLocation.array() >= m_gridSize.array().cast<float>()).any())
+    if ((trueGridLocation.array() < 0.0f).any() ||
+        (trueGridLocation.array() >= m_gridSize.array().cast<float>()).any())
         return Eigen::Matrix3f::Zero();
 
     // ToDo: Optimize - Ideally compute Gradient for whole SDF grid and the hessian of whole SDF grid. Reduce the repeat computation
     float fxyz = getDistance(gridLocation);
-    float fxplus2yz = getDistance(gridLocation + Eigen::Vector3f(2, 0, 0));
-    float fxminus2yz = getDistance(gridLocation + Eigen::Vector3f(-2, 0, 0));
-    float fxyplus2z = getDistance(gridLocation + Eigen::Vector3f(0, 2, 0));
-    float fxyminus2z = getDistance(gridLocation + Eigen::Vector3f(0, -2, 0));
-    float fxyzplus2 = getDistance(gridLocation + Eigen::Vector3f(0, 0, 2));
-    float fxyzminus2 = getDistance(gridLocation + Eigen::Vector3f(0, 0, -2));
-    float fxplus1yzplus1 = getDistance(gridLocation + Eigen::Vector3f(1, 0, 1));
-    float fxminus1yzplus1 = getDistance(gridLocation + Eigen::Vector3f(-1, 0, 1));
-    float fxyplus1zplus1 = getDistance(gridLocation + Eigen::Vector3f(0, 1, 1));
-    float fxyminus1zplus1 = getDistance(gridLocation + Eigen::Vector3f(0, -1, 1));
-    float fxplus1yplus1z = getDistance(gridLocation + Eigen::Vector3f(1, 1, 0));
-    float fxminus1yplus1z = getDistance(gridLocation + Eigen::Vector3f(-1, 1, 0));
-    float fxminus1yzminus1 = getDistance(gridLocation + Eigen::Vector3f(-1, 0, -1));
-    float fxplus1yzminus1 = getDistance(gridLocation + Eigen::Vector3f(1, 0, -1));
-    float fxyminus1zminus1 = getDistance(gridLocation + Eigen::Vector3f(0, -1, -1));
-    float fxyplus1zminus1 = getDistance(gridLocation + Eigen::Vector3f(0, 1, -1));
-    float fxminus1yminus1z = getDistance(gridLocation + Eigen::Vector3f(-1, -1, 0));
-    float fxplus1yminus1z = getDistance(gridLocation + Eigen::Vector3f(1, -1, 0));
+    float fxplus2yz = getDistance(gridLocation + deltaSize * Eigen::Vector3f(2, 0, 0));
+    float fxminus2yz = getDistance(gridLocation + deltaSize * Eigen::Vector3f(-2, 0, 0));
+    float fxyplus2z = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, 2, 0));
+    float fxyminus2z = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, -2, 0));
+    float fxyzplus2 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, 0, 2));
+    float fxyzminus2 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, 0, -2));
+    float fxplus1yzplus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(1, 0, 1));
+    float fxminus1yzplus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(-1, 0, 1));
+    float fxyplus1zplus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, 1, 1));
+    float fxyminus1zplus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, -1, 1));
+    float fxplus1yplus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3f(1, 1, 0));
+    float fxminus1yplus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3f(-1, 1, 0));
+    float fxminus1yzminus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(-1, 0, -1));
+    float fxplus1yzminus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(1, 0, -1));
+    float fxyminus1zminus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, -1, -1));
+    float fxyplus1zminus1 = getDistance(gridLocation + deltaSize * Eigen::Vector3f(0, 1, -1));
+    float fxminus1yminus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3f(-1, -1, 0));
+    float fxplus1yminus1z = getDistance(gridLocation + deltaSize * Eigen::Vector3f(1, -1, 0));
 
     float fxx, fyy, fzz, fxy, fxz, fyz;
-    float denominator = (4 * m_voxelSize * m_voxelSize); // 4h^2, where h is step size.
+    float denominator = (4 * deltaSize * deltaSize); // 4h^2, where h is step size.
     fxx = (fxplus2yz - 2 * fxyz + fxminus2yz);
     fyy = (fxyplus2z - 2 * fxyz + fxyminus2z);
-    fyy = (fxyzplus2 - 2 * fxyz + fxyzminus2);
+    fzz = (fxyzplus2 - 2 * fxyz + fxyzminus2);
     fxz = (fxplus1yzplus1 + fxminus1yzminus1 - fxplus1yzminus1 - fxminus1yzplus1);
     fyz = (fxyplus1zplus1 + fxyminus1zminus1 - fxyplus1zminus1 - fxyminus1zplus1);
     fxy = (fxplus1yplus1z + fxminus1yminus1z - fxplus1yminus1z - fxminus1yplus1z);
@@ -789,7 +789,54 @@ Eigen::Matrix3f SDF::computeDistanceHessian(const Eigen::Vector3f &gridLocation)
     hessian(0, 1) = hessian(1, 0) = fxy;
     hessian(0, 2) = hessian(2, 0) = fxz;
     hessian(1, 2) = hessian(2, 1) = fyz;
+
+    // Dividing by denominator causes floating precision errors if
     return hessian / denominator;
+}
+
+void SDF::testComputeDistanceHessian()
+{
+    // Since interpolation is used, analytic function f to test should be linear
+    float voxelSize = 0.5;
+    Eigen::Vector3f min3dLoc(0, 0, 0);
+    Eigen::Vector3f max3dLoc(8, 8, 8);
+    float unknownClipDistance = 10;
+    SDF testSdf(voxelSize, min3dLoc, max3dLoc, UnknownClipDistance);
+    // cout << testSdf.m_voxelGridTSDF.size() << endl;
+    for (int z = 0; z < testSdf.m_gridSize(2); z++)
+    {
+        for (int y = 0; y < testSdf.m_gridSize(1); y++)
+        {
+            for (int x = 0; x < testSdf.m_gridSize(0); x++)
+            {
+                int index = z * testSdf.m_gridSpacingPerAxis(2) + y * testSdf.m_gridSpacingPerAxis(1) + x;
+                // if(x == testSdf.m_gridSize(0)-1 && y == testSdf.m_gridSize(1)-1)
+                //     cout << "Hi";
+                testSdf.m_voxelGridTSDF[index] = x + y - z;
+            }
+        }
+    }
+
+    // ToDo: Add Bounday conditions
+    for (int z = 2; z < testSdf.m_gridSize(2) - 2; z++)
+    {
+        for (int y = 2; y < testSdf.m_gridSize(1) - 2; y++)
+        {
+            for (int x = 2; x < testSdf.m_gridSize(0) - 2; x++)
+            {
+                for (int i = 0; i < 10; i++) // Hessian looks 2 steps away, and thus we will cross the boundary for
+                {
+                    float delta = i * voxelSize / 10.0f;
+                    Eigen::Vector3f gridLocation(x + 0.5f + delta, y + 0.5f - delta, z + 0.5f - delta);
+                    Eigen::Matrix3f actualDistanceHessian = testSdf.computeDistanceHessian(gridLocation);
+                    // cout << x << ',' << y << ',' << z << "," << i << ": Expected: Zero Matrix, Actually isZero " << actualDistanceHessian << endl;
+                    if (!actualDistanceHessian.isZero(1e-2))
+                        actualDistanceHessian = testSdf.computeDistanceHessian(gridLocation);
+                    assert(actualDistanceHessian.isZero(1e-2) && "Whoops, check SDF::testComputeDistanceGradient");
+                }
+            }
+        }
+    }
 }
 
 Eigen::Matrix3f SDF::computeDistanceHessian(const Eigen::Vector3i &spatialIndex,
@@ -825,6 +872,8 @@ Eigen::Matrix3f SDF::computeDistanceHessian(const Eigen::Vector3i &spatialIndex,
     fxz = (fxplus1yzplus1 + fxminus1yzminus1 - fxplus1yzminus1 - fxminus1yzplus1);
     fyz = (fxyplus1zplus1 + fxyminus1zminus1 - fxyplus1zminus1 - fxyminus1zplus1);
     fxy = (fxplus1yplus1z + fxminus1yminus1z - fxplus1yminus1z - fxminus1yplus1z);
+
+    // Dividing by denominator causes floating precision errors.
 
     Eigen::Matrix3f hessian;
     hessian(0, 0) = fxx;

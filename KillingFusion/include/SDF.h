@@ -135,6 +135,8 @@ public:
   Eigen::Matrix3f computeDistanceHessian(const Eigen::Vector3i &spatialIndex,
                                          const DisplacementField *displacementField) const;
 
+  static void testComputeDistanceHessian();
+
   /**
    * Fuses otherSdf which should be of same size as this.
    */

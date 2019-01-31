@@ -44,9 +44,9 @@ const extern std::string outputDir[2];
  * Killing Fusion Pipeline configuration
  */
 
-// The below four params change how optimization is done over each voxel for next frame.
+// The below params change how optimization is done over each voxel for next frame.
 const extern bool EnergyTypeUsed[3]; // To enable or disable - Data, LevelSet, Killing
-const extern bool UseZeroDisplacementFieldForNextFrame; // Use Zero Displacement Field.
+const extern bool UseZeroDisplacementFieldForNextFrame; // Use Zero Displacement Field for next frame. Only useful when using Data Energy.
 const extern bool UpdateAllVoxelsInEachIter; // Update is performed on all voxels for each iterations. If false, all iteration updates are performed on one voxel and then on next. Ideadlly, One should make one update on all voxels, and then perform next iter, thus keey this true. But runs very fast if false. :)
 const extern bool UsePreviousIterationDeformationField; // If true, previous iteration displacement field is used for computing LevelSet Energy and KillingEnergy. 
 const extern bool UseTrustStrategy; // Only used when working only with data energy. Helps in finding which alpha to use for voxel data energy gradient.

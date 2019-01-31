@@ -15,6 +15,7 @@ int main(int argc, char ** argv) {
   SDF::testGetDistance();
   SDF::testGetWeight();
   SDF::testComputeDistanceGradient();
+  SDF::testComputeDistanceHessian();
   // fusion.processTest(1);
   // fusion.processTest(2);
   // fusion.processTest(3);

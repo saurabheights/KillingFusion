@@ -118,7 +118,7 @@ Eigen::Matrix3f DisplacementField::computeJacobian(float x, float y, float z) co
 void DisplacementField::testJacobian()
 {
     // Since interpolation is used in numerical differentiation, analytic function f to test should be linear
-    float voxelSize = 1;
+    float voxelSize = 0.5;
     DisplacementField testField(Eigen::Vector3i(8, 8, 8), voxelSize);
     for (size_t x = 0; x < 5; x++)
     {
@@ -170,7 +170,7 @@ float DisplacementField::computeKillingEnergy(float x, float y, float z) const
 void DisplacementField::testKillingEnergy()
 {
     // Since interpolation is used in numerical differentiation, analytic function f to test should be linear
-    float voxelSize = 1;
+    float voxelSize = 0.5;
     DisplacementField testField(Eigen::Vector3i(8, 8, 8), voxelSize);
     for (size_t x = 0; x < 5; x++)
     {

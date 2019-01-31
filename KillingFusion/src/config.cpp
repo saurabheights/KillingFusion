@@ -25,7 +25,8 @@ const bool UseZeroDisplacementFieldForNextFrame = false;
 const bool UpdateAllVoxelsInEachIter = true;
 const bool UsePreviousIterationDeformationField = false; // If true, previous iteration displacement field is used for computing LevelSet Energy and KillingEnergy. 
 const bool UseTrustStrategy = false; // Only used when working only with data energy. Helps in finding which alpha to use for voxel data energy gradient.
-const float deltaSize = 0.01; // Step Size in Voxel unit for central difference.
+// Do not reduce, causes floating point precision errors in SDF::computeDistanceHessian
+const float deltaSize = 0.1; // Step Size in Voxel unit for central difference.
 
 
 /**
@@ -39,7 +40,7 @@ const float deltaSize = 0.01; // Step Size in Voxel unit for central difference.
  * of 8 mm for human-sized subjects and 4 mm for smaller-scale ones.
  */
 const int KILLING_MAX_ITERATIONS = 256;
-const float threshold = 0.000001f;
+const float threshold = 0.0001f;
 
 const float alpha = 0.01f;
 

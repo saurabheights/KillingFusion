@@ -417,7 +417,7 @@ Eigen::Vector3f KillingFusion::computeEnergyGradient(const SDF *src,
   // levelset_grad *= omegaLevelSet;
   // }
 
-  return data_grad + killing_grad + levelset_grad;
+  return (data_grad + killing_grad + levelset_grad);
 }
 
 Eigen::Vector3f KillingFusion::computeDataEnergyGradient(const SDF *src,
@@ -426,8 +426,8 @@ Eigen::Vector3f KillingFusion::computeDataEnergyGradient(const SDF *src,
                                                          const Eigen::Vector3i &spatialIndex)
 {
   Eigen::Vector3f srcPointDistanceGradient = src->computeDistanceGradient(spatialIndex, srcDisplacementField);
-  // if (srcPointDistanceGradient.norm() > 0)
-  //   srcPointDistanceGradient.normalize(); // only direction is required
+  if (srcPointDistanceGradient.norm() > 0)
+    srcPointDistanceGradient.normalize(); // only direction is required
   float srcPointDistance = src->getDistance(spatialIndex, srcDisplacementField);
   float destPointDistance = dest->getDistanceAtIndex(spatialIndex);
   return (srcPointDistance - destPointDistance)/VoxelSize * srcPointDistanceGradient.array();
@@ -450,7 +450,7 @@ Eigen::Vector3f KillingFusion::computeLevelSetEnergyGradient(const SDF *src,
 
   // float srcPointDistance = src->getDistance(spatialIndex, srcDisplacementField);
   // float destPointDistance = dest->getDistanceAtIndex(spatialIndex);
-  // Eigen::Vector3f dataEnergy = (srcPointDistance - destPointDistance) * grad.array();
+  // Eigen::Vector3f dataEnergy = (srcPointDistance - destPointDistance) / VoxelSize* grad.array();
 
   // Compute Hessian
   Eigen::Matrix3f hessian = src->computeDistanceHessian(spatialIndex, srcDisplacementField);
