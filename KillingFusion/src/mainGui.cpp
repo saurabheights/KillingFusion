@@ -96,7 +96,7 @@ void renderImage(cv::Mat image)
   cv::flip(image, flippedImage, 0); // Opencv 0,0 is on topleft but opengl has 0,0 on bottom left
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glRasterPos2i(-1, -1);
-  glDrawPixels(flippedImage.cols, flippedImage.rows, GL_RGB, GL_UNSIGNED_BYTE, flippedImage.data);
+  glDrawPixels(flippedImage.cols, flippedImage.rows, GL_BGR, GL_UNSIGNED_BYTE, flippedImage.data);
 }
 
 void renderDepthImage(cv::Mat depthImage)
@@ -258,7 +258,7 @@ static void draw()
   // Convert to FreeImage format & save to file
   glFinish(); // When doing heavy processing, the glReadPixels does not load all data.
   BYTE *pixels = new BYTE[3 * screenWidth * screenHeight];
-  glReadPixels(0, 0, screenWidth, screenHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+  glReadPixels(0, 0, screenWidth, screenHeight, GL_BGR, GL_UNSIGNED_BYTE, pixels);
   glFinish();
   FIBITMAP *image = FreeImage_ConvertFromRawBits(pixels, screenWidth, screenHeight, 3 * screenWidth, 24, 0x0000FF, 0xFF0000, 0x00FF00, false);
 
@@ -268,7 +268,7 @@ static void draw()
   FreeImage_Unload(image);
   delete[] pixels;
 
-  if(!lastFrameSeen && currentFrameIndex > fusion->getEndFrameIndex()) 
+  if(!lastFrameSeen && currentFrameIndex >= fusion->getEndFrameIndex()) 
   {
     lastFrameSeen = true;
     meshes[2]->WriteMesh(outputDirPath+"FinalCanonicalMesh.obj");
@@ -290,7 +290,7 @@ int main(int argc, char **argv)
   // Create output directory to save screenshot
   std::stringstream outputDirectoryStream;
   outputDirectoryStream << OUTPUT_DIR << outputDir[datasetType]
-                 << "Data-1DivideDisplacementByVoxelSize-ZeroDisplacementField-" << EnergyTypeUsed[0]
+                 << "Data-" << EnergyTypeUsed[0]
                  << "_LS-" << EnergyTypeUsed[1] << "_omegaLS-" << omegaLevelSet
                  << "_KVF-" << EnergyTypeUsed[2] << "_omegaK-" << omegaKilling << "_gammaK-" << gammaKilling
                  << "_Fuse-" << (FUSE_BY_MERGE ? "Merge" : "Math")
