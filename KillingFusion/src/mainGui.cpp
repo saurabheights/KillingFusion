@@ -302,7 +302,7 @@ int main(int argc, char **argv)
                  << '/';
   outputDirPath = outputDirectoryStream.str();
   std::cout << outputDirPath << std::endl;
-  cv::utils::fs::createDirectory(outputDirPath);
+  cv::utils::fs::createDirectories(outputDirPath);
 
   glutInit(&argc, argv);
 

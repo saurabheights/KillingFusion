@@ -226,7 +226,7 @@ SDF *KillingFusion::computeSDF(int frameIndex)
 
 DisplacementField *KillingFusion::createZeroDisplacementField(const SDF &sdf)
 {
-  DisplacementField* displacementField = new DisplacementField(sdf.getGridSize(), VoxelSize);
+  DisplacementField *displacementField = new DisplacementField(sdf.getGridSize(), VoxelSize);
   // displacementField->initializeAllVoxels(Eigen::Vector3d(-m_currFrameIndex/5, 0, 0)); // To check if deformation field works. It does.
   return displacementField;
 }
