@@ -22,7 +22,7 @@ public:
   ~DisplacementField();
 
   Eigen::Vector3d getDisplacementAt(const Eigen::Vector3i &spatialIndex) const;
-  
+
   Eigen::Vector3d getDisplacementAt(int x, int y, int z) const;
 
   Eigen::Vector3d getDisplacementAtf(const Eigen::Vector3d &gridLocation) const;
@@ -32,9 +32,9 @@ public:
   /**
    * Update(adds) the displacement value at location spatialIndex by deltaUpdate.
    */
-  void update(const Eigen::Vector3i& spatialIndex, const Eigen::Vector3d &deltaUpdate);
+  void update(const Eigen::Vector3i &spatialIndex, const Eigen::Vector3d &deltaUpdate);
 
-  DisplacementField& operator+(const DisplacementField& otherDisplacementField);
+  DisplacementField &operator+(const DisplacementField &otherDisplacementField);
 
   void initializeAllVoxels(Eigen::Vector3d displacement);
 

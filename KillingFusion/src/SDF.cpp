@@ -130,7 +130,7 @@ void SDF::allocateMemoryForSDF()
     m_voxelGridWeight.resize(m_totalNumberOfVoxels);
     // Set the distance to 1, since 1 represents each point is too far from the surface.
     // This is done for any voxel which had no correspondences in the image and thus was never processed.
-    std::fill(m_voxelGridTSDF.begin(), m_voxelGridTSDF.end(), 1.0f);
+    std::fill(m_voxelGridTSDF.begin(), m_voxelGridTSDF.end(), MaxSurfaceVoxelDistance+epsilon);
     std::fill(m_voxelGridWeight.begin(), m_voxelGridWeight.end(), 0);
 }
 
@@ -475,14 +475,14 @@ bool SDF::indexInGridBounds(const Eigen::Vector3i &gridSpatialIndex) const
 double SDF::getDistanceAtIndex(const Eigen::Vector3i &gridSpatialIndex) const
 {
     if (!indexInGridBounds(gridSpatialIndex))
-        return -1;
+        return MaxSurfaceVoxelDistance+epsilon;
     return m_voxelGridTSDF.at(gridSpatialIndex.dot(m_gridSpacingPerAxis));
 }
 
 double SDF::getDistanceAtIndex(int x, int y, int z) const
 {
     if (!indexInGridBounds(x, y, z))
-        return -1;
+        return MaxSurfaceVoxelDistance+epsilon;
     return m_voxelGridTSDF.at(z * m_gridSpacingPerAxis(2) + y * m_gridSpacingPerAxis(1) + x);
 }
 
