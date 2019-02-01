@@ -111,7 +111,7 @@ Eigen::Matrix3f DisplacementField::computeJacobian(float x, float y, float z) co
         jacobian.col(i) = displacementUVW[i][0] - displacementUVW[i][1];
     }
 
-    jacobian /= 2 * deltaSize * m_voxelSize;
+    jacobian /= 2 * deltaSize;
     return jacobian;
 }
 
@@ -157,9 +157,9 @@ float DisplacementField::computeKillingEnergy(float x, float y, float z) const
     }
 
     // Stack Matrix and its transpose columnwise
+    Eigen::Matrix3f jacobianTranspose = jacobian.transpose();
     Eigen::VectorXf jacobianVec(Eigen::Map<Eigen::VectorXf>(jacobian.data(), jacobian.cols() * jacobian.rows()));
-    jacobian.transposeInPlace();
-    Eigen::VectorXf jacobianTransposeVec(Eigen::Map<Eigen::VectorXf>(jacobian.data(), jacobian.cols() * jacobian.rows()));
+    Eigen::VectorXf jacobianTransposeVec(Eigen::Map<Eigen::VectorXf>(jacobianTranspose.data(), jacobianTranspose.cols() * jacobianTranspose.rows()));
 
     // Compute Damped Approximate Killing Vector Field
     float avkf = jacobianVec.dot(jacobianVec) + gammaKilling * jacobianTransposeVec.dot(jacobianVec);
@@ -228,6 +228,6 @@ Eigen::Vector3f DisplacementField::computeKillingEnergyGradient(const Eigen::Vec
                                                     z - deltaLoc[i][2] * deltaSize);
     }
 
-    killingEnergyGrad /= 2 * deltaSize * m_voxelSize;
+    killingEnergyGrad /= 2 * deltaSize;
     return killingEnergyGrad;
 }
