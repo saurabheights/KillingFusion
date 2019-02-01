@@ -21,7 +21,7 @@ DisplacementField::~DisplacementField()
 Eigen::Vector3f DisplacementField::getDisplacementAt(const Eigen::Vector3i &spatialIndex) const
 {
     int index = m_gridSpacingPerAxis.dot(spatialIndex);
-    if (index < 0 || index > m_gridSize.prod())
+    if (index < 0 || index >= m_gridSize.prod())
         return Eigen::Vector3f::Zero();
     return m_gridDisplacementValue.at(index);
 }
@@ -29,7 +29,7 @@ Eigen::Vector3f DisplacementField::getDisplacementAt(const Eigen::Vector3i &spat
 Eigen::Vector3f DisplacementField::getDisplacementAt(int x, int y, int z) const
 {
     int index = z * m_gridSpacingPerAxis(2) + y * m_gridSpacingPerAxis(1) + x;
-    if (index < 0 || index > m_gridSize.prod())
+    if (index < 0 || index >= m_gridSize.prod())
         return Eigen::Vector3f::Zero();
 
     Eigen::Vector3f tmp = m_gridDisplacementValue.at(index);
