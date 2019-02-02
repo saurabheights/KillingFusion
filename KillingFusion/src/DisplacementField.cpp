@@ -109,7 +109,30 @@ Eigen::Matrix3d DisplacementField::computeJacobian(double x, double y, double z)
         // displacementUVW[i][0] - displacementUVW[i][1] gives how DisplacementField changes with 2 * deltaX
         // Thus, (displacementUVW[i][0] - displacementUVW[i][1])/2*deltaX, gives ux, vx, wx.
         jacobian.col(i) = displacementUVW[i][0] - displacementUVW[i][1];
+#ifdef DEBUG_KILLING_ENERGY
+        cout << "Displacement At: "
+             << Eigen::Vector3d(x + deltaLoc[i][0] * deltaSize,
+                                y + deltaLoc[i][1] * deltaSize,
+                                z + deltaLoc[i][2] * deltaSize)
+                    .transpose()
+             << "is"
+             << displacementUVW[i][0].transpose() << '\n';
+        cout << "Displacement At: "
+             << Eigen::Vector3d(x - deltaLoc[i][0] * deltaSize,
+                                y - deltaLoc[i][1] * deltaSize,
+                                z - deltaLoc[i][2] * deltaSize)
+                    .transpose()
+             << "is"
+             << displacementUVW[i][1].transpose() << '\n';
+#endif
     }
+
+#ifdef DEBUG_KILLING_ENERGY
+    cout << "Jacobian Matrix is \n"
+         << jacobian << '\n';
+    cout << "Jacobian Matrix/delta is \n"
+         << jacobian / 2 * deltaSize << '\n';
+#endif
 
     jacobian /= 2 * deltaSize;
     return jacobian;
@@ -203,13 +226,45 @@ void DisplacementField::testKillingEnergy()
                         avkf += analyticalJacobian(i, j) * analyticalJacobian(i, j) + gammaKilling * analyticalJacobian(i, j) * analyticalJacobian(j, i);
                     }
                 }
-                if(fabs(avkf - testField.computeKillingEnergy(x, y, z)) > epsilon)
+                if (fabs(avkf - testField.computeKillingEnergy(x, y, z)) > epsilon)
                 {
                     cout << analyticalJacobian << endl;
                     float expectedAvkf = testField.computeKillingEnergy(x, y, z);
                 }
                 // remove truncation of killing energy if test fails.
                 assert(fabs(avkf - testField.computeKillingEnergy(x, y, z)) < epsilon && "Whoops! Check DisplacementField::testKillingEnergy");
+            }
+        }
+    }
+
+    testField.initializeAllVoxels(Eigen::Vector3d(0,0,0));
+    for (size_t x = 0; x < 8; x++)
+    {
+        for (size_t y = 0; y < 8; y++)
+        {
+            for (size_t z = 0; z < 8; z++)
+            {
+                // F(x,y,z) = (x+y, x+z, y+z)
+                double f1 = x*x;
+                double f2 = 0;
+                double f3 = 0;
+                testField.update(Eigen::Vector3i(x, y, z), Eigen::Vector3d(f1, f2, f3));
+            }
+        }
+    }
+
+    for (size_t x = 1; x < 7; x++)
+    {
+        for (size_t y = 1; y < 7; y++)
+        {
+            for (size_t z = 1; z < 7; z++)
+            {
+                // remove truncation of killing energy if test fails.
+                Eigen::Vector3d avkfGrad1 = testField.computeKillingEnergyGradient(Eigen::Vector3i(x, y, z));
+                Eigen::Vector3d avkfGrad2 = testField.computeKillingEnergyGradient2(Eigen::Vector3i(x, y, z));
+                assert(fabs(avkfGrad1(0) - avkfGrad2(0)) < epsilon && "Whoops! Check DisplacementField::testKillingEnergyGradient");
+                assert(fabs(avkfGrad1(1) - avkfGrad2(1)) < epsilon && "Whoops! Check DisplacementField::testKillingEnergyGradient");
+                assert(fabs(avkfGrad1(2) - avkfGrad2(2)) < epsilon && "Whoops! Check DisplacementField::testKillingEnergyGradient");
             }
         }
     }
@@ -234,7 +289,49 @@ Eigen::Vector3d DisplacementField::computeKillingEnergyGradient(const Eigen::Vec
                                                     y - deltaLoc[i][1] * deltaSize,
                                                     z - deltaLoc[i][2] * deltaSize);
     }
-
     killingEnergyGrad /= 2 * deltaSize;
     return killingEnergyGrad;
+}
+
+Eigen::Vector3d DisplacementField::computeKillingEnergyGradient2(const Eigen::Vector3i &spatialIndex) const
+{
+    Eigen::Vector3d gridLocation = spatialIndex.cast<double>();
+    // ToDo: Optimize
+    Eigen::Vector3d displacement_xyz = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(0, 0, 0));
+    Eigen::Vector3d displacement_xplus2yz = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(2, 0, 0));
+    Eigen::Vector3d displacement_xminus2yz = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(-2, 0, 0));
+    Eigen::Vector3d displacement_xyplus2z = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(0, 2, 0));
+    Eigen::Vector3d displacement_xyminus2z = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(0, -2, 0));
+    Eigen::Vector3d displacement_xyzplus2 = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(0, 0, 2));
+    Eigen::Vector3d displacement_xyzminus2 = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(0, 0, -2));
+    Eigen::Vector3d displacement_xplus1yzplus1 = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(1, 0, 1));
+    Eigen::Vector3d displacement_xminus1yzplus1 = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(-1, 0, 1));
+    Eigen::Vector3d displacement_xyplus1zplus1 = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(0, 1, 1));
+    Eigen::Vector3d displacement_xyminus1zplus1 = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(0, -1, 1));
+    Eigen::Vector3d displacement_xplus1yplus1z = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(1, 1, 0));
+    Eigen::Vector3d displacement_xminus1yplus1z = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(-1, 1, 0));
+    Eigen::Vector3d displacement_xminus1yzminus1 = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(-1, 0, -1));
+    Eigen::Vector3d displacement_xplus1yzminus1 = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(1, 0, -1));
+    Eigen::Vector3d displacement_xyminus1zminus1 = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(0, -1, -1));
+    Eigen::Vector3d displacement_xyplus1zminus1 = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(0, 1, -1));
+    Eigen::Vector3d displacement_xminus1yminus1z = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(-1, -1, 0));
+    Eigen::Vector3d displacement_xplus1yminus1z = getDisplacementAtf(gridLocation + deltaSize * Eigen::Vector3d(1, -1, 0));
+
+    Eigen::Vector3d displacement_xx, displacement_yy, displacement_zz, displacement_xy, displacement_xz, displacement_yz;
+    displacement_xx = (displacement_xplus2yz - 2 * displacement_xyz + displacement_xminus2yz);
+    displacement_yy = (displacement_xyplus2z - 2 * displacement_xyz + displacement_xyminus2z);
+    displacement_zz = (displacement_xyzplus2 - 2 * displacement_xyz + displacement_xyzminus2);
+    displacement_xz = (displacement_xplus1yzplus1 + displacement_xminus1yzminus1 - displacement_xplus1yzminus1 - displacement_xminus1yzplus1);
+    displacement_yz = (displacement_xyplus1zplus1 + displacement_xyminus1zminus1 - displacement_xyplus1zminus1 - displacement_xyminus1zplus1);
+    displacement_xy = (displacement_xplus1yplus1z + displacement_xminus1yminus1z - displacement_xplus1yminus1z - displacement_xminus1yplus1z);
+
+    Eigen::Vector3d killingEnergyGradient = 2 * (displacement_xx + displacement_yy + displacement_zz) +
+                                            2 * gammaKilling * Eigen::Vector3d(
+                                                displacement_xx(0) + displacement_xy(1) + displacement_xz(2), 
+                                                displacement_xy(0) + displacement_yy(1) + displacement_yz(2),
+                                                displacement_xz(0) + displacement_yz(1) + displacement_zz(2));
+
+    // Dividing by denominator in real distance causes floating precision errors. Keep unit in voxel size.
+    double denominator = (4 * deltaSize * deltaSize); // 4h^2, where h is step size.
+    return killingEnergyGradient / denominator;
 }

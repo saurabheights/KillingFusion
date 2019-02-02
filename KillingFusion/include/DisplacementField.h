@@ -56,6 +56,7 @@ public:
    * Computes Killing energy gradient at any given point of the displacement field.
    */
   Eigen::Vector3d computeKillingEnergyGradient(const Eigen::Vector3i &spatialIndex) const;
+  Eigen::Vector3d computeKillingEnergyGradient2(const Eigen::Vector3i &spatialIndex) const;
 };
 
 #endif // DISPLACEMENT_FIELD_H
