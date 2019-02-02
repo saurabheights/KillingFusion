@@ -143,7 +143,8 @@ vector<SimpleMesh *> KillingFusion::processNextFrame()
 
     timer.reset();
     // Compute Deformation Field for current frame SDF to merge with m_canonicalSdf
-    computeDisplacementField(currSdf, m_canonicalSdf, curr2CanDisplacementField);
+    if (EnergyTypeUsed[0] || EnergyTypeUsed[1] || EnergyTypeUsed[2]) // For quick check on what happens if no energy is used.
+      computeDisplacementField(currSdf, m_canonicalSdf, curr2CanDisplacementField);
     double killingTime = timer.elapsed();
 
     timer.reset();
@@ -244,6 +245,7 @@ void KillingFusion::computeDisplacementField(const SDF *src,
     // Make one update for each voxel at a time.
     for (size_t iter = 0; iter < KILLING_MAX_ITERATIONS; iter++)
     {
+      // std::cout << iter << std::endl;
       DisplacementField *currIterDeformation = nullptr;
       if (UsePreviousIterationDeformationField)
         currIterDeformation = createZeroDisplacementField(*src);
@@ -263,7 +265,7 @@ void KillingFusion::computeDisplacementField(const SDF *src,
 
             // Check if srcGridLocation is near the Surface.
             double srcSdfDistance = src->getDistance(spatialIndex, srcToDest);
-            if (srcSdfDistance > MaxSurfaceVoxelDistance-epsilon || srcSdfDistance < -UnknownClipDistance)
+            if (srcSdfDistance > MaxSurfaceVoxelDistance - epsilon || srcSdfDistance < -UnknownClipDistance)
               continue;
 
 #ifdef MY_DEBUG
@@ -409,6 +411,18 @@ Eigen::Vector3d KillingFusion::computeEnergyGradient(const SDF *src,
     killing_grad = computeKillingEnergyGradient(srcDisplacementField, spatialIndex) * omegaKilling;
   }
 
+
+#ifdef DEBUG_GRADIENT_MAGNITUDE
+  if (levelset_grad.norm() > 1e-1 || killing_grad.norm() > 1e-1)
+  {
+    cout << "Data" << data_grad.norm() << "," << data_grad.transpose() << '\n'
+         << "LSet" << levelset_grad.norm() << "," << levelset_grad.transpose() << '\n'
+         << "Kill" << killing_grad.norm() << "," << killing_grad.transpose() << endl;
+    // data_grad = computeDataEnergyGradient(src, dest, srcDisplacementField, spatialIndex);
+    // levelset_grad = computeLevelSetEnergyGradient(src, dest, srcDisplacementField, spatialIndex) * omegaLevelSet;
+    // killing_grad = computeKillingEnergyGradient(srcDisplacementField, spatialIndex) * omegaKilling;
+  }
+#endif
 
   return (data_grad + killing_grad + levelset_grad);
 }

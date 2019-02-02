@@ -290,6 +290,10 @@ Eigen::Vector3d DisplacementField::computeKillingEnergyGradient(const Eigen::Vec
                                                     z - deltaLoc[i][2] * deltaSize);
     }
     killingEnergyGrad /= 2 * deltaSize;
+
+#ifdef DEBUG_KILLING_ENERGY
+    cout << "Killing Energy Gradient at" << spatialIndex.transpose() << " is " << killingEnergyGrad.transpose() << '\n';
+#endif
     return killingEnergyGrad;
 }
 
