@@ -144,7 +144,12 @@ vector<SimpleMesh *> KillingFusion::processNextFrame()
     timer.reset();
     // Compute Deformation Field for current frame SDF to merge with m_canonicalSdf
     if (EnergyTypeUsed[0] || EnergyTypeUsed[1] || EnergyTypeUsed[2]) // For quick check on what happens if no energy is used.
+    {
       computeDisplacementField(currSdf, m_canonicalSdf, curr2CanDisplacementField);
+      std::stringstream filenameStream;
+      filenameStream << OUTPUT_DIR << outputDir[datasetType] << std::setfill('0') << std::setw(3) << std::to_string(m_currFrameIndex) << ".bin";
+      curr2CanDisplacementField->dumpToBinFile(filenameStream.str());
+    }
     double killingTime = timer.elapsed();
 
     timer.reset();

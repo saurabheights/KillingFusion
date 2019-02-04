@@ -92,6 +92,11 @@ public:
   {
     return m_endFrame;
   }
+
+  DisplacementField* getCurrentFrameDisplacementField()
+  {
+    return m_prev2CanDisplacementField;
+  }
 };
 
 #endif //INC_3DSCANNINGANDMOTIONCAPTURE_FUSION_H

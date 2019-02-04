@@ -57,6 +57,12 @@ public:
    */
   Eigen::Vector3d computeKillingEnergyGradient(const Eigen::Vector3i &spatialIndex) const;
   Eigen::Vector3d computeKillingEnergyGradient2(const Eigen::Vector3i &spatialIndex) const;
+
+  void dumpToBinFile(std::string outputFilePath) const;
+
+  Eigen::Vector3i getGridSize() const {
+    return m_gridSize;
+  }
 };
 
 #endif // DISPLACEMENT_FIELD_H

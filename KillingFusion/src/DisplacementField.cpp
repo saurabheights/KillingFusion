@@ -1,5 +1,6 @@
 #include <DisplacementField.h>
 #include <iostream>
+#include <fstream>
 #include "config.h"
 #include "utils.h"
 using namespace std;
@@ -338,4 +339,23 @@ Eigen::Vector3d DisplacementField::computeKillingEnergyGradient2(const Eigen::Ve
     // Dividing by denominator in real distance causes floating precision errors. Keep unit in voxel size.
     double denominator = (4 * deltaSize * deltaSize); // 4h^2, where h is step size.
     return killingEnergyGradient / denominator;
+}
+
+void DisplacementField::dumpToBinFile(string outputFilePath) const
+{
+    cout << "============================================================================\n";
+    cout << "Saving Displacement voxel grid values at " << outputFilePath << "\n";
+    ofstream outFile(outputFilePath, ios::binary | ios::out);
+    outFile.write((char *)m_gridSize.data(), 3 * sizeof(int));
+    outFile.write((char *)&m_voxelSize, sizeof(double));
+    double minDisp = 1000, maxDisp = -1000; 
+    for (size_t i = 0; i < m_gridSize.prod(); i++)
+    {
+        outFile.write((char *)(m_gridDisplacementValue[i].data()), 3 * sizeof(double));
+        minDisp = std::min(minDisp, m_gridDisplacementValue[i].norm());
+        maxDisp = std::max(maxDisp, m_gridDisplacementValue[i].norm());
+    }
+    cout << "minDisp is " << minDisp << " and maxDisp is " << maxDisp << endl;
+    outFile.close();
+    cout << "============================================================================\n";
 }
