@@ -188,8 +188,8 @@ double DisplacementField::computeKillingEnergy(double x, double y, double z) con
 
     // Compute Damped Approximate Killing Vector Field
     double avkf = jacobianVec.dot(jacobianVec) + gammaKilling * jacobianTransposeVec.dot(jacobianVec);
-    // return avkf;
-    return std::min(avkf, 0.01); // threshold to cutoff too high killing values, causes Nan in grad due to high displacement. Put this in config.cpp
+    return avkf;
+    // return std::min(avkf, 5.0); // threshold to cutoff too high killing values, causes Nan in grad due to high displacement. Put this in config.cpp
 }
 
 void DisplacementField::testKillingEnergy()
@@ -330,14 +330,19 @@ Eigen::Vector3d DisplacementField::computeKillingEnergyGradient2(const Eigen::Ve
     displacement_yz = (displacement_xyplus1zplus1 + displacement_xyminus1zminus1 - displacement_xyplus1zminus1 - displacement_xyminus1zplus1);
     displacement_xy = (displacement_xplus1yplus1z + displacement_xminus1yminus1z - displacement_xplus1yminus1z - displacement_xminus1yplus1z);
 
-    Eigen::Vector3d killingEnergyGradient = 2 * (displacement_xx + displacement_yy + displacement_zz) +
-                                            2 * gammaKilling * Eigen::Vector3d(
+    Eigen::Vector3d killingEnergyGradient = -2 * (displacement_xx + displacement_yy + displacement_zz) +
+                                            -2 * gammaKilling * Eigen::Vector3d(
                                                 displacement_xx(0) + displacement_xy(1) + displacement_xz(2), 
                                                 displacement_xy(0) + displacement_yy(1) + displacement_yz(2),
                                                 displacement_xz(0) + displacement_yz(1) + displacement_zz(2));
 
     // Dividing by denominator in real distance causes floating precision errors. Keep unit in voxel size.
     double denominator = (4 * deltaSize * deltaSize); // 4h^2, where h is step size.
+
+    double killingThreshold = 0.1;
+    if(killingEnergyGradient.norm() > killingThreshold) {
+        killingEnergyGradient = killingEnergyGradient.normalized() * killingThreshold;
+    }
     return killingEnergyGradient / denominator;
 }
 

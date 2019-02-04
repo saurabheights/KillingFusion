@@ -22,8 +22,8 @@ KillingFusion::KillingFusion(DatasetReader datasetReader)
                            frameBound.second,
                            UnknownClipDistance);
   cout << m_canonicalSdf->getGridSize().transpose() << endl;
-  m_startFrame = 5;
-  m_endFrame = 100;
+  m_startFrame = 1;
+  m_endFrame = 50;
   m_stride = 1;
   m_currFrameIndex = m_startFrame;
   m_prev2CanDisplacementField = nullptr;
@@ -366,7 +366,7 @@ void KillingFusion::computeDisplacementField(const SDF *src,
 
           // Check if srcGridLocation is near the Surface.
           double srcSdfDistance = src->getDistance(spatialIndex, srcToDest);
-          if (srcSdfDistance > MaxSurfaceVoxelDistance || srcSdfDistance < -MaxSurfaceVoxelDistance)
+          if (srcSdfDistance > MaxSurfaceVoxelDistance - epsilon || srcSdfDistance < -MaxSurfaceVoxelDistance+epsilon)
             continue;
 
           // Optimize Killing Energy between Source Grid and Desination Grid
@@ -416,6 +416,15 @@ Eigen::Vector3d KillingFusion::computeEnergyGradient(const SDF *src,
     killing_grad = computeKillingEnergyGradient(srcDisplacementField, spatialIndex) * omegaKilling;
   }
 
+  // if (killing_grad.norm() > 1.1 * data_grad.norm() && data_grad.norm() > 1e-4) // Floating precision error if data_grad is too small
+  // {
+  //   killing_grad = killing_grad * 1.1* data_grad.norm() / killing_grad.norm();
+  // }
+
+  // if (levelset_grad.norm() > 4*data_grad.norm() && data_grad.norm() > 1e-4) // Floating precision error if data_grad is too small
+  // {
+  //   levelset_grad = levelset_grad * data_grad.norm() / levelset_grad.norm();
+  // }
 
 #ifdef DEBUG_GRADIENT_MAGNITUDE
   if (levelset_grad.norm() > 1e-1 || killing_grad.norm() > 1e-1)
@@ -438,17 +447,17 @@ Eigen::Vector3d KillingFusion::computeDataEnergyGradient(const SDF *src,
                                                          const Eigen::Vector3i &spatialIndex)
 {
   Eigen::Vector3d srcPointDistanceGradient = src->computeDistanceGradient(spatialIndex, srcDisplacementField);
-  if (srcPointDistanceGradient.norm() > 0)
-    srcPointDistanceGradient.normalize(); // only direction is required
+  // if (srcPointDistanceGradient.norm() > 1e-3) // Do not normalize when near 0
+  //   srcPointDistanceGradient.normalize(); // only direction is required
   double srcPointDistance = src->getDistance(spatialIndex, srcDisplacementField);
   double destPointDistance = dest->getDistanceAtIndex(spatialIndex);
-  return (srcPointDistance - destPointDistance)/VoxelSize * srcPointDistanceGradient.array();
+  return (srcPointDistance - destPointDistance) / VoxelSize * srcPointDistanceGradient.array();
 }
 
 Eigen::Vector3d KillingFusion::computeKillingEnergyGradient(const DisplacementField *srcDisplacementField,
                                                             const Eigen::Vector3i &spatialIndex)
 {
-  Eigen::Vector3d killingGrad = srcDisplacementField->computeKillingEnergyGradient(spatialIndex);
+  Eigen::Vector3d killingGrad = srcDisplacementField->computeKillingEnergyGradient2(spatialIndex);
   return killingGrad;
 }
 
@@ -462,9 +471,7 @@ Eigen::Vector3d KillingFusion::computeLevelSetEnergyGradient(const SDF *src,
 
   // Compute Hessian
   Eigen::Matrix3d hessian = src->computeDistanceHessian(spatialIndex, srcDisplacementField);
-
   Eigen::Vector3d levelSetGrad = hessian * grad * (grad.norm() - 1) / (grad.norm() + epsilon);
-
   return levelSetGrad;
 }
 

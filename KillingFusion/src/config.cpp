@@ -20,13 +20,13 @@ const double datasetDepthMinMaxValues[2][2] = {
 
 const std::string outputDir[2] = {"Duck/", "Snoopy/"};
 
-const bool EnergyTypeUsed[3] = {true, false, false}; // Data, LevelSet, Killing
-const bool UseZeroDisplacementFieldForNextFrame = false;
-const bool UpdateAllVoxelsInEachIter = true;
-const bool UsePreviousIterationDeformationField = false; // If true, previous iteration displacement field is used for computing LevelSet Energy and KillingEnergy. 
+const bool EnergyTypeUsed[3] = {true, true, true}; // Data, LevelSet, Killing
+const bool UseZeroDisplacementFieldForNextFrame = true;
+const bool UpdateAllVoxelsInEachIter = false;
+const bool UsePreviousIterationDeformationField = true; // If true, previous iteration displacement field is used for computing LevelSet Energy and KillingEnergy. 
 const bool UseTrustStrategy = false; // Only used when working only with data energy. Helps in finding which alpha to use for voxel data energy gradient.
 // Do not reduce, causes floating point precision errors in SDF::computeDistanceHessian
-const double deltaSize = 0.1; // Step Size in Voxel unit for central difference.
+const double deltaSize = 0.05; // Step Size in Voxel unit for central difference.
 
 
 /**
@@ -39,16 +39,16 @@ const double deltaSize = 0.1; // Step Size in Voxel unit for central difference.
  * deformation field contains vectors spanning up to several voxels. We used a voxel size 
  * of 8 mm for human-sized subjects and 4 mm for smaller-scale ones.
  */
-const int KILLING_MAX_ITERATIONS = 256;
-const double threshold = 0.0001;
+const int KILLING_MAX_ITERATIONS = 1024;
+const double threshold = 0.000001;
 
-const double alpha = 0.01;
+const double alpha = 0.025;
 
 // Killing weights
-const double omegaKilling = 0.2;
+const double omegaKilling = 0.04;
 
 // Killing - Purity
-const double gammaKilling = 0.1;
+const double gammaKilling = 0;
 
 // Level-set condition weights
 const double omegaLevelSet = 0.1;
