@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "KillingFusion.h"
+#include "DisplacementField.h"
 #include "DatasetReader.h"
 #include "config.h"
 
@@ -85,6 +86,42 @@ void renderMesh(SimpleMesh *mesh)
     glVertex3dv(v2.data());
   }
   glEnd();
+}
+
+void renderDisplacementField(DisplacementField *displacementField)
+{
+  glMatrixMode(GL_PROJECTION); // Tell opengl that we are doing project matrix work
+  glLoadIdentity();            // Clear the matrix
+  Eigen::Vector3i gridSize = displacementField->getGridSize();
+  glOrtho(0, gridSize(0), 0, gridSize(1), 0, gridSize(1));
+  glMatrixMode(GL_MODELVIEW); // Tell opengl that we are doing model matrix work. (drawing)
+  glLoadIdentity();           // Clear the model matrix
+
+  glDisable(GL_LIGHTING);
+  glLineWidth(1.0);
+  glBegin(GL_LINES);
+  Eigen::Vector3d halfGridSize = gridSize.cast<double>() / 2;
+  for (int z = 0; z < gridSize(2); z++)
+  {
+    for (int y = 0; y < gridSize(1); y++)
+    {
+      for (int x = 0; x < gridSize(0); x++)
+      {
+        Eigen::Vector3d displacement = displacementField->getDisplacementAt(x, y, z);
+        if (displacement.norm() > epsilon)
+        {
+          displacement.normalized();
+          Eigen::Vector3d startLoc = Eigen::Vector3d(x, gridSize(1) - y, -z);
+          Eigen::Vector3d endLoc = startLoc + displacement;
+          glVertex3dv(startLoc.data());
+          glVertex3dv(endLoc.data());
+        }
+      }
+    }
+  }
+  glEnd();
+  glFlush();
+  glEnable(GL_LIGHTING);
 }
 
 void renderImage(cv::Mat image)
@@ -227,7 +264,7 @@ static void draw()
   if (meshes[1] != nullptr)
   {
     glViewport(elementWidth * 2, elementHeight + TextHeight, minElementHeightAndWidth, minElementHeightAndWidth);
-    glOrtho(-1, 1, -1, 1, 0, 1);
+    glOrtho(-1, 1, -1, 1, -1, 1);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     renderMesh(meshes[1]);
@@ -249,6 +286,17 @@ static void draw()
   glViewport(0, 0, screenWidth, screenHeight);
   displayText(elementWidth * 2.5, 0, 128, 128, 128, screenWidth, screenHeight, "Merged Canonical SDF");
 
+  // Render Canonical SDF mesh on a Square ViewPort on bottom right
+  DisplacementField *displacementField = fusion->getCurrentFrameDisplacementField();
+  if (displacementField != nullptr)
+  {
+    glViewport(elementWidth, TextHeight, minElementHeightAndWidth, minElementHeightAndWidth);
+    renderDisplacementField(displacementField);
+  }
+
+  glViewport(0, 0, screenWidth, screenHeight);
+  displayText(elementWidth * 1.5, 0, 128, 128, 128, screenWidth, screenHeight, "Displacement Field");
+
   glutSwapBuffers();
   glutPostRedisplay();
 
@@ -263,15 +311,23 @@ static void draw()
   FIBITMAP *image = FreeImage_ConvertFromRawBits(pixels, screenWidth, screenHeight, 3 * screenWidth, 24, 0x0000FF, 0xFF0000, 0x00FF00, false);
 
   std::stringstream filenameStream;
-  filenameStream << outputDirPath << std::setfill('0') << std::setw(3) << std::to_string(currentFrameIndex) << ".png";
+  filenameStream << outputDirPath
+                 << std::setfill('0') << std::setw(3) << std::to_string(currentFrameIndex)
+                 << "D-" << EnergyTypeUsed[0] << "_LS-" << EnergyTypeUsed[1] << "_KVF-" << EnergyTypeUsed[2]
+                 << "_oK-" << omegaKilling << "_gK-" << gammaKilling << "_oLS-" << omegaLevelSet
+                 << "_iter-" << KILLING_MAX_ITERATIONS
+                 << "_alpha-" << alpha
+                 << "_voxel-" << VoxelSize
+                 << "_surfaceDist-" << MaxSurfaceVoxelDistance
+                 << ".png";
   FreeImage_Save(FIF_PNG, image, filenameStream.str().c_str(), 0);
   FreeImage_Unload(image);
   delete[] pixels;
 
-  if(!lastFrameSeen && currentFrameIndex >= fusion->getEndFrameIndex()) 
+  if (!lastFrameSeen && currentFrameIndex >= fusion->getEndFrameIndex())
   {
     lastFrameSeen = true;
-    meshes[2]->WriteMesh(outputDirPath+"FinalCanonicalMesh.obj");
+    meshes[2]->WriteMesh(outputDirPath + "FinalCanonicalMesh.obj");
   }
 
   /**
@@ -288,19 +344,14 @@ int main(int argc, char **argv)
   fusion = new KillingFusion(*datasetReader);
 
   // Create output directory to save screenshot
-  std::stringstream outputDirectoryStream;
-  outputDirectoryStream << OUTPUT_DIR << outputDir[datasetType]
-                 << "Data-" << EnergyTypeUsed[0]
-                 << "_LS-" << EnergyTypeUsed[1] << "_omegaLS-" << omegaLevelSet
-                 << "_KVF-" << EnergyTypeUsed[2] << "_omegaK-" << omegaKilling << "_gammaK-" << gammaKilling
-                 << "_Fuse-" << (FUSE_BY_MERGE ? "Merge" : "Math")
-                 << "_VoxelSize-" << VoxelSize
-                 << "_UnknownClipDist-" << UnknownClipDistance
-                 << "_MaxSurfaceVoxelDist-" << MaxSurfaceVoxelDistance
-                 << "_Iter-" << KILLING_MAX_ITERATIONS
-                 << "_alpha-" << alpha 
-                 << '/';
-  outputDirPath = outputDirectoryStream.str();
+  std::stringstream outputDirStream;
+  outputDirStream << OUTPUT_DIR << outputDir[datasetType]
+                  << "D-" << EnergyTypeUsed[0] << "_LS-" << EnergyTypeUsed[1] << "_KVF-" << EnergyTypeUsed[2]
+                  << "_oK-" << omegaKilling << "_gK-" << gammaKilling << "_oLS-" << omegaLevelSet
+                  << "_iter-" << KILLING_MAX_ITERATIONS
+                  << "_alpha-" << alpha
+                  << "_voxel-" << VoxelSize << '/';
+  outputDirPath = outputDirStream.str();
   std::cout << outputDirPath << std::endl;
   cv::utils::fs::createDirectories(outputDirPath);
 
@@ -311,7 +362,7 @@ int main(int argc, char **argv)
 
   // register glut call backs
   glutReshapeFunc(reshape); // Using FullScreen
-  glFinish(); // First go full screen
+  glFinish();               // First go full screen
   glutDisplayFunc(draw);
   initGL(1920, 1080);
   glutFullScreen();
