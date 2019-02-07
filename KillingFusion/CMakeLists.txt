@@ -33,13 +33,6 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(/home/sk/windows/workspace/Libraries/FreeImage3170/build/include/)
 link_directories(/home/sk/windows/workspace/Libraries/FreeImage3170/build/lib/)
 
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
-
 ## Definitions
 add_definitions(-DPROJECT_DIR="${PROJECT_SOURCE_DIR}")
 add_definitions(-DDATA_DIR="${PROJECT_SOURCE_DIR}/data/")
@@ -47,7 +40,6 @@ add_definitions(-DOUTPUT_DIR="${PROJECT_SOURCE_DIR}/output/")
 
 # Set files to be compiled
 include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${PROJECT_SOURCE_DIR}/OpenGlMath)
 
 set(HEADER_FILES
         include/config.h
