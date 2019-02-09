@@ -1,14 +1,14 @@
 # KillingFusion
 
 This is my implementation of [KillingFusion](http://campar.in.tum.de/Chair/PublicationDetail?pub=slavcheva2017cvpr). What works well:-
-  - Full GUI to view displacement field, current frame and SDF's mesh using Marching Cubes.
+  - Full GUI to view displacement field, current RGBD frame and SDF's mesh using Marching Cubes.
   - Data Energy Term - [Video](https://youtu.be/DAhcmZfHk_4)
   - Data Energy and Motion Regularizer Term - [Video](https://www.youtube.com/watch?v=3NYu2poyIhk)
-  - Magic :P
+  - LevelSet Energy Term
 
 What needs work:-
  - Implement **Rigid Registration**. This is must, since number of iterations becomes very high with slightest displacement of object from its initial position and the data term of a voxel gets not gradient if voxel ends up too away from canonical SDF voxels.
- - Balancing of Rigidity cnstraint energy with Data and Motion Regularizer term.
+ - Balancing of Rigidity constraint energy with Data and Motion Regularizer term.
 
 ### Installation
 
