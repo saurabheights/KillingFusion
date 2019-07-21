@@ -8,11 +8,11 @@ This is my implementation of [KillingFusion](http://campar.in.tum.de/Chair/Publi
 
 What needs work:-
  - Implement **Rigid Registration**. This is must, since number of iterations becomes very high with slightest displacement of object from its initial position and the data term of a voxel gets not gradient if voxel ends up too away from canonical SDF voxels.
- - Balancing of Rigidity constraint energy with Data and Motion Regularizer term.
+ - Balancing of Rigidity constraint energy with Data and Motion Regularizer term. Some notes on this issue are [here](https://github.com/Algomorph/InfiniTAM/issues/20)
 
 ### Installation
 
-Fix path to compiled FreeImage library in CmakeLists.txt and then run CMake. 
+Fix path to compile FreeImage library in CmakeLists.txt and then run CMake. 
 
 ### ToDo
  - Move all code to CUDA.
